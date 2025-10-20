@@ -1,0 +1,7 @@
+{
+  "name": "Cognix AI",
+  "description": "Cognix AI, developed by Shashwat Ranjan Jha, is an advanced assistant featuring text chat, image generation with Gemini 2.5 Flash Image, and real-time voice conversation with Gemini 2.5 Flash Live.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
