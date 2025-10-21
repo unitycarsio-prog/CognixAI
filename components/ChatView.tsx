@@ -68,21 +68,26 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: textInput }] },
+            contents: {
+              parts: [{ text: textInput }],
+            },
             config: {
                 responseModalities: [Modality.IMAGE],
             },
         });
-
-        let generatedImageUrl: string | undefined;
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                const base64ImageBytes = part.inlineData.data;
-                generatedImageUrl = `data:image/png;base64,${base64ImageBytes}`;
-                break;
+        
+        let generatedImageUrl: string | null = null;
+        if (response.candidates?.[0]?.content?.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.inlineData) {
+                    const base64ImageBytes: string = part.inlineData.data;
+                    const mimeType = part.inlineData.mimeType;
+                    generatedImageUrl = `data:${mimeType};base64,${base64ImageBytes}`;
+                    break;
+                }
             }
         }
-        
+
         if (generatedImageUrl) {
             const modelMessage: ChatMessage = { role: 'model', parts: [{ imageUrl: generatedImageUrl }] };
             setMessages(prev => [...prev, modelMessage]);
@@ -244,50 +249,56 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                 setImage(null);
                 setImagePreview(null);
               }}
-              className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 leading-none hover:bg-black"
-              aria-label="Remove image"
+              className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 leading-none"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              &times;
             </button>
           </div>
         )}
         <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-gray-200 dark:bg-gray-700 rounded-lg p-1 z-10">
-            <button 
-              onClick={() => setMode('chat')} 
-              className={`p-1.5 rounded-md transition-colors ${mode === 'chat' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}
-              aria-label="Chat mode"
-            >
-                <PencilIcon className={`w-5 h-5 ${mode === 'chat' ? 'text-cyan-500' : 'text-gray-500 dark:text-gray-300'}`} />
-            </button>
-            <button 
-              onClick={() => setMode('image')} 
-              className={`p-1.5 rounded-md transition-colors ${mode === 'image' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}
-              aria-label="Image generation mode"
-            >
-                <SparklesIcon className={`w-5 h-5 ${mode === 'image' ? 'text-cyan-500' : 'text-gray-500 dark:text-gray-300'}`} />
-            </button>
-          </div>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={mode === 'chat' ? "Type a message, or add an image..." : "Describe the image you want to create..."}
-            className="w-full p-4 pl-28 pr-24 rounded-lg bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-cyan-500 focus:outline-none resize-none transition-colors"
-            rows={1}
-            disabled={isLoading}
-          />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {mode === 'chat' && (
-                <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 dark:text-gray-400 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-50" disabled={isLoading}>
-                    <ImageIcon className="w-6 h-6" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center">
+                <button
+                    onClick={() => setMode('chat')}
+                    className={`p-2 rounded-lg transition-colors ${mode === 'chat' ? 'text-cyan-500 bg-cyan-100/50 dark:bg-cyan-900/50' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    aria-label="Chat mode"
+                >
+                    <PencilIcon className="w-5 h-5" />
                 </button>
-            )}
-            <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
-            <button onClick={handleSendMessage} disabled={(!input.trim() && (mode === 'chat' ? !image : true)) || isLoading} className="p-2 rounded-full bg-cyan-500 text-white disabled:bg-gray-300 dark:disabled:bg-gray-600 transition-colors">
-                <SendIcon className="w-6 h-6" />
-            </button>
-          </div>
+                <button
+                    onClick={() => setMode('image')}
+                    className={`p-2 rounded-lg transition-colors ${mode === 'image' ? 'text-cyan-500 bg-cyan-100/50 dark:bg-cyan-900/50' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    aria-label="Image generation mode"
+                >
+                    <SparklesIcon className="w-5 h-5" />
+                </button>
+            </div>
+
+            <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={mode === 'chat' ? 'Type a message or drop an image...' : 'Describe the image you want to generate...'}
+                className="w-full p-4 pr-24 pl-28 bg-gray-100 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none resize-none"
+                rows={1}
+                disabled={isLoading}
+            />
+
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+                {mode === 'chat' && (
+                    <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 dark:text-gray-400 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors">
+                        <ImageIcon className="w-6 h-6" />
+                    </button>
+                )}
+                <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+                <button
+                    onClick={handleSendMessage}
+                    disabled={(!input.trim() && !image && mode === 'chat') || (!input.trim() && mode === 'image') || isLoading}
+                    className="p-2 rounded-full bg-cyan-500 text-white disabled:bg-cyan-300 dark:disabled:bg-cyan-700 hover:bg-cyan-600 transition-colors"
+                    aria-label="Send message"
+                >
+                    <SendIcon className="w-5 h-5" />
+                </button>
+            </div>
         </div>
       </div>
     </div>
