@@ -10,6 +10,13 @@ export interface ChatPart {
 }
 
 export interface ChatMessage {
+  id: string;
   role: 'user' | 'model';
   parts: ChatPart[];
+}
+
+export interface ChatSession {
+  id:string;
+  title: string;
+  messages: ChatMessage[];
 }

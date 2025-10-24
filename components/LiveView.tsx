@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ai } from '../services/gemini';
-import { MicrophoneIcon, StopIcon } from './Icons';
+import { MicrophoneIcon, StopIcon, BotIcon, UserIcon } from './Icons';
 // FIX: Removed LiveSession from import as it is not an exported member of '@google/genai'.
 import type { LiveServerMessage, Blob } from '@google/genai';
 import { Modality } from '@google/genai';
@@ -63,6 +64,13 @@ export const LiveView: React.FC = () => {
     const nextStartTimeRef = useRef(0);
     const currentInputTranscriptionRef = useRef('');
     const currentOutputTranscriptionRef = useRef('');
+    const transcriptContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (transcriptContainerRef.current) {
+            transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+        }
+    }, [transcripts]);
 
     const stopSession = useCallback(async () => {
         if (sessionPromiseRef.current) {
@@ -143,46 +151,51 @@ export const LiveView: React.FC = () => {
                     }
                 },
                 onmessage: async (message: LiveServerMessage) => {
-                    const outputCtx = outputAudioContextRef.current!;
-                    const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
+                    try {
+                        const outputCtx = outputAudioContextRef.current!;
+                        const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
 
-                    if (base64EncodedAudioString) {
-                        nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
-                        const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), outputCtx, 24000, 1);
-                        const source = outputCtx.createBufferSource();
-                        source.buffer = audioBuffer;
-                        source.connect(outputCtx.destination);
-                        source.addEventListener('ended', () => { outputSourcesRef.current.delete(source) });
-                        source.start(nextStartTimeRef.current);
-                        nextStartTimeRef.current += audioBuffer.duration;
-                        outputSourcesRef.current.add(source);
-                    }
-                    
-                    if (message.serverContent?.interrupted) {
-                        outputSourcesRef.current.forEach(source => source.stop());
-                        outputSourcesRef.current.clear();
-                        nextStartTimeRef.current = 0;
-                    }
+                        if (base64EncodedAudioString) {
+                            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
+                            const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), outputCtx, 24000, 1);
+                            const source = outputCtx.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(outputCtx.destination);
+                            source.addEventListener('ended', () => { outputSourcesRef.current.delete(source) });
+                            source.start(nextStartTimeRef.current);
+                            nextStartTimeRef.current += audioBuffer.duration;
+                            outputSourcesRef.current.add(source);
+                        }
+                        
+                        if (message.serverContent?.interrupted) {
+                            outputSourcesRef.current.forEach(source => source.stop());
+                            outputSourcesRef.current.clear();
+                            nextStartTimeRef.current = 0;
+                        }
 
-                    if (message.serverContent?.inputTranscription) {
-                        currentInputTranscriptionRef.current += message.serverContent.inputTranscription.text;
-                        setTranscripts(prev => {
-                            const last = prev[prev.length - 1];
-                            if (last?.speaker === 'user') return [...prev.slice(0, -1), { ...last, text: currentInputTranscriptionRef.current }];
-                            return [...prev, { speaker: 'user', text: currentInputTranscriptionRef.current }];
-                        });
-                    } else if (message.serverContent?.outputTranscription) {
-                        currentOutputTranscriptionRef.current += message.serverContent.outputTranscription.text;
-                        setTranscripts(prev => {
-                            const last = prev[prev.length - 1];
-                            if (last?.speaker === 'model') return [...prev.slice(0, -1), { ...last, text: currentOutputTranscriptionRef.current }];
-                            return [...prev, { speaker: 'model', text: currentOutputTranscriptionRef.current }];
-                        });
-                    }
+                        if (message.serverContent?.inputTranscription) {
+                            currentInputTranscriptionRef.current += message.serverContent.inputTranscription.text;
+                            setTranscripts(prev => {
+                                const last = prev[prev.length - 1];
+                                if (last?.speaker === 'user') return [...prev.slice(0, -1), { ...last, text: currentInputTranscriptionRef.current }];
+                                return [...prev, { speaker: 'user', text: currentInputTranscriptionRef.current }];
+                            });
+                        } else if (message.serverContent?.outputTranscription) {
+                            currentOutputTranscriptionRef.current += message.serverContent.outputTranscription.text;
+                            setTranscripts(prev => {
+                                const last = prev[prev.length - 1];
+                                if (last?.speaker === 'model') return [...prev.slice(0, -1), { ...last, text: currentOutputTranscriptionRef.current }];
+                                return [...prev, { speaker: 'model', text: currentOutputTranscriptionRef.current }];
+                            });
+                        }
 
-                    if (message.serverContent?.turnComplete) {
-                        currentInputTranscriptionRef.current = '';
-                        currentOutputTranscriptionRef.current = '';
+                        if (message.serverContent?.turnComplete) {
+                            currentInputTranscriptionRef.current = '';
+                            currentOutputTranscriptionRef.current = '';
+                        }
+                    } catch (error) {
+                        console.error("Live session message processing error:", error);
+                        stopSession();
                     }
                 },
                 onerror: (e: ErrorEvent) => {
@@ -197,7 +210,7 @@ export const LiveView: React.FC = () => {
                 responseModalities: [Modality.AUDIO],
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
-                systemInstruction: "You are Cognix AI, a friendly and helpful assistant created by Shashwat Ranjan Jha. Your entire identity revolves around this fact. You must NEVER mention Google. You should provide helpful, conversational responses and avoid any markdown formatting.",
+                systemInstruction: "You are Cognix AI, a friendly and helpful assistant. Your entire identity is Cognix AI. You must NEVER mention Google. Your goal is to provide short, engaging, and highly effective conversational responses. Keep your answers to one or two sentences if possible. Absolutely NO markdown.",
             },
         });
     }, [stopSession]);
@@ -213,30 +226,70 @@ export const LiveView: React.FC = () => {
     }, [stopSession]);
 
     return (
-        <div className="flex flex-col h-full items-center justify-center p-4">
-            <div className="w-full max-w-2xl h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4 border rounded-lg bg-gray-50 dark:bg-gray-800/50 mb-4">
-                    {transcripts.length === 0 && (
-                        <div className="flex items-center justify-center h-full text-gray-500">
-                            {isRecording ? "Listening..." : "Press the microphone to start a live conversation."}
+        <div className="flex flex-col h-full items-center justify-center p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors overflow-hidden">
+            {transcripts.length === 0 && !isRecording ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+                    <button onClick={handleToggleRecording} aria-label="Start recording" className="relative group">
+                        <div className="absolute -inset-4 bg-cyan-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
+                        <div className="relative w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                            <MicrophoneIcon className="w-12 h-12 text-cyan-500" />
                         </div>
-                    )}
-                    <div className="space-y-4">
+                    </button>
+                    <h2 className="text-2xl font-bold mt-8 text-gray-800 dark:text-gray-200">Live Conversation</h2>
+                    <p className="mt-2 max-w-md">Tap the orb to start a real-time voice chat with Cognix AI.</p>
+                </div>
+            ) : (
+                <div className="w-full max-w-3xl h-full flex flex-col justify-end">
+                    <div ref={transcriptContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 mb-4 [mask-image:linear-gradient(to_bottom,transparent,black_10%,black_90%,transparent)]">
+                        {isRecording && transcripts.length === 0 && (
+                            <div className="flex items-center justify-center h-full text-gray-500 animate-pulse">
+                                Listening...
+                            </div>
+                        )}
                         {transcripts.map((t, i) => (
-                            <div key={i} className={`flex ${t.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`px-4 py-2 rounded-lg max-w-lg ${t.speaker === 'user' ? 'bg-cyan-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                    <span className="font-bold capitalize">{t.speaker === 'user' ? 'You' : 'Model'}: </span>{t.text}
+                             <div key={i} className={`flex items-end gap-2 ${t.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                {t.speaker === 'model' && <BotIcon className="w-6 h-6 text-cyan-500 shrink-0 mb-1" />}
+                                <div className={`px-4 py-2 rounded-2xl max-w-lg backdrop-blur-sm ${t.speaker === 'user' ? 'bg-cyan-500 text-white rounded-br-none' : 'bg-gray-200 dark:bg-gray-700/80 rounded-bl-none'}`}>
+                                    {t.text}
                                 </div>
+                                {t.speaker === 'user' && <UserIcon className="w-6 h-6 text-gray-400 shrink-0 mb-1" />}
                             </div>
                         ))}
                     </div>
+
+                    <div className="flex flex-col items-center justify-center py-6">
+                        {isRecording && (
+                             <div className="w-full h-16 flex justify-center items-center gap-1">
+                                {Array.from({ length: 40 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="w-1 bg-cyan-400 rounded-full"
+                                        style={{
+                                            height: `${Math.random() * 80 + 20}%`,
+                                            animation: `wave 1.5s ease-in-out ${i * 0.05}s infinite alternate`
+                                        }}
+                                    ></div>
+                                ))}
+                            </div>
+                        )}
+                        <button 
+                            onClick={handleToggleRecording} 
+                            className={`relative z-10 p-4 mt-6 rounded-full transition-all duration-300 ${isRecording ? 'bg-red-500 hover:bg-red-600 scale-110' : 'bg-cyan-500 hover:bg-cyan-600'} text-white shadow-lg`} 
+                            aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+                        >
+                             {isRecording ? <StopIcon className="w-8 h-8" /> : <MicrophoneIcon className="w-8 h-8" />}
+                        </button>
+                    </div>
                 </div>
-                <div className="flex justify-center">
-                    <button onClick={handleToggleRecording} className={`p-4 rounded-full transition-colors duration-200 ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-cyan-500 hover:bg-cyan-600'} text-white`} aria-label={isRecording ? 'Stop recording' : 'Start recording'}>
-                        {isRecording ? <StopIcon className="w-8 h-8" /> : <MicrophoneIcon className="w-8 h-8" />}
-                    </button>
-                </div>
-            </div>
+            )}
+            <style>
+                {`
+                @keyframes wave {
+                    0% { transform: scaleY(0.1); opacity: 0.3; }
+                    100% { transform: scaleY(1); opacity: 1; }
+                }
+                `}
+            </style>
         </div>
     );
 };
