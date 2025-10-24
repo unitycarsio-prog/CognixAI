@@ -92,9 +92,6 @@ const addWatermark = async (base64ImageUrl: string): Promise<string> => {
     }
 };
 
-type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
-const aspectRatios: AspectRatio[] = ['1:1', '16:9', '9:16', '4:3', '3:4'];
-
 export const ImageView: React.FC = () => {
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +100,6 @@ export const ImageView: React.FC = () => {
     const [uploadedImage, setUploadedImage] = useState<File | null>(null);
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
     const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
-    const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,112 +121,70 @@ export const ImageView: React.FC = () => {
         setError(null);
 
         try {
+            const apiParts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [];
+            
             if (uploadedImage) {
-                // --- EDITING LOGIC ---
-                const apiParts: ({ text: string } | { inlineData: { mimeType: string; data: string; } })[] = [];
                 const base64Data = await fileToBase64(uploadedImage);
                 apiParts.push({
                     inlineData: { mimeType: uploadedImage.type, data: base64Data },
                 });
-                if (prompt.trim()) {
-                    apiParts.push({ text: prompt.trim() });
-                }
-                
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash-image',
-                    contents: { parts: apiParts },
-                    config: { responseModalities: [Modality.IMAGE] },
-                });
-
-                const candidate = response.candidates?.[0];
-
-                if (response.promptFeedback?.blockReason) {
-                    let errorMessage = `Image generation was blocked.\nReason: ${response.promptFeedback.blockReason}.`;
-                    const blockedRatings = response.promptFeedback.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                    if (blockedRatings && blockedRatings.length > 0) {
-                        errorMessage += `\nBlocked Categories: ${blockedRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                    }
-                    throw new Error(errorMessage);
-                }
-                if (candidate && candidate.finishReason && candidate.finishReason !== 'STOP') {
-                    let errorMessage = `Image generation failed.\nReason: ${candidate.finishReason}.`;
-                    const safetyRatings = candidate.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                    if (safetyRatings && safetyRatings.length > 0) {
-                        errorMessage += `\nTriggered Categories: ${safetyRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                    }
-                    throw new Error(errorMessage);
-                }
-                const imagePart = candidate?.content?.parts?.find(p => p.inlineData);
-                const generatedImageBytes = imagePart?.inlineData?.data;
-
-                if (!generatedImageBytes) {
-                    let finalErrorMessage = "The model did not return an image. This could be due to a content issue with the prompt or a temporary model error.";
-                    const allSafetyRatings = candidate?.safetyRatings;
-                    if (allSafetyRatings && allSafetyRatings.length > 0) {
-                        const highProbRatings = allSafetyRatings.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                        if (highProbRatings.length > 0) {
-                            let errorMessage = `Image generation was blocked due to safety filters.`;
-                            errorMessage += `\nTriggered Categories: ${highProbRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                            throw new Error(errorMessage);
-                        } else {
-                            finalErrorMessage = "The model did not return an image. While no high-risk content was detected, the prompt may have touched on sensitive topics. Please try rephrasing your prompt.";
-                        }
-                    }
-                    if (!candidate) {
-                        finalErrorMessage = "The model returned an empty response. This could be a network issue or an unfulfillable prompt."
-                    }
-                    throw new Error(finalErrorMessage);
-                }
-                
-                const fullBase64Url = `data:${imagePart?.inlineData?.mimeType};base64,${generatedImageBytes}`;
-                const watermarkedImageUrl = await addWatermark(fullBase64Url);
-                setGeneratedImage(watermarkedImageUrl);
-
-            } else {
-                // --- GENERATION LOGIC ---
-                if (!prompt.trim()) throw new Error("A prompt is required for image generation.");
-
-                const response = await ai.models.generateImages({
-                    model: 'imagen-4.0-generate-001',
-                    prompt: prompt.trim(),
-                    config: {
-                        numberOfImages: 1,
-                        outputMimeType: 'image/png',
-                        aspectRatio: aspectRatio,
-                    },
-                });
-                
-                if (response.promptFeedback?.blockReason) {
-                    let errorMessage = `Image generation was blocked.\nReason: ${response.promptFeedback.blockReason}.`;
-                    const blockedRatings = response.promptFeedback.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                    if (blockedRatings && blockedRatings.length > 0) {
-                        errorMessage += `\nBlocked Categories: ${blockedRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                const generatedImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
-
-                if (!generatedImageBytes) {
-                    let finalErrorMessage = "The model did not return an image. This could be due to safety filters or an issue with the prompt.";
-                    const allSafetyRatings = response.promptFeedback?.safetyRatings;
-                    if (allSafetyRatings && allSafetyRatings.length > 0) {
-                        const highProbRatings = allSafetyRatings.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                        if (highProbRatings.length > 0) {
-                            let errorMessage = `Image generation was blocked due to safety filters.`;
-                            errorMessage += `\nTriggered Categories: ${highProbRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                            throw new Error(errorMessage);
-                        } else {
-                             finalErrorMessage = "The model did not return an image. While no high-risk content was detected, the prompt may have touched on sensitive topics. Please try rephrasing your prompt.";
-                        }
-                    }
-                    throw new Error(finalErrorMessage);
-                }
-
-                const fullBase64Url = `data:image/png;base64,${generatedImageBytes}`;
-                const watermarkedImageUrl = await addWatermark(fullBase64Url);
-                setGeneratedImage(watermarkedImageUrl);
             }
+
+            if (prompt.trim()) {
+                apiParts.push({ text: prompt.trim() });
+            } else if (!uploadedImage) {
+                throw new Error("A prompt is required for image generation.");
+            }
+            
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: { parts: apiParts },
+                config: { responseModalities: [Modality.IMAGE] },
+            });
+
+            const candidate = response.candidates?.[0];
+
+            if (response.promptFeedback?.blockReason) {
+                let errorMessage = `Image generation was blocked.\nReason: ${response.promptFeedback.blockReason}.`;
+                const blockedRatings = response.promptFeedback.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
+                if (blockedRatings && blockedRatings.length > 0) {
+                    errorMessage += `\nBlocked Categories: ${blockedRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
+                }
+                throw new Error(errorMessage);
+            }
+            if (candidate && candidate.finishReason && candidate.finishReason !== 'STOP') {
+                let errorMessage = `Image generation failed.\nReason: ${candidate.finishReason}.`;
+                const safetyRatings = candidate.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
+                if (safetyRatings && safetyRatings.length > 0) {
+                    errorMessage += `\nTriggered Categories: ${safetyRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
+                }
+                throw new Error(errorMessage);
+            }
+            const imagePart = candidate?.content?.parts?.find(p => p.inlineData);
+            const generatedImageBytes = imagePart?.inlineData?.data;
+
+            if (!generatedImageBytes) {
+                let finalErrorMessage = "The model did not return an image. This could be due to a content issue with the prompt or a temporary model error.";
+                const allSafetyRatings = candidate?.safetyRatings;
+                if (allSafetyRatings && allSafetyRatings.length > 0) {
+                    const highProbRatings = allSafetyRatings.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
+                    if (highProbRatings.length > 0) {
+                        let errorMessage = `Image generation was blocked due to safety filters.`;
+                        errorMessage += `\nTriggered Categories: ${highProbRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
+                        throw new Error(errorMessage);
+                    } else {
+                        finalErrorMessage = "The model did not return an image. While no high-risk content was detected, the prompt may have touched on sensitive topics. Please try rephrasing your prompt.";
+                    }
+                }
+                if (!candidate) {
+                    finalErrorMessage = "The model returned an empty response. This could be a network issue or an unfulfillable prompt."
+                }
+                throw new Error(finalErrorMessage);
+            }
+            
+            const fullBase64Url = `data:${imagePart?.inlineData?.mimeType};base64,${generatedImageBytes}`;
+            const watermarkedImageUrl = await addWatermark(fullBase64Url);
+            setGeneratedImage(watermarkedImageUrl);
             
             // Clear inputs on success
             setUploadedImage(null);
@@ -335,11 +289,11 @@ export const ImageView: React.FC = () => {
                     ) : (
                         <div className="flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
                             <ImageIcon className="w-24 h-24 text-cyan-500/50 mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">High-Quality Image Generation</h2>
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Image Generation &amp; Editing</h2>
                             <p className="mt-2 max-w-md">
-                                Create stunning images with Imagen 4. Just type a prompt and select an aspect ratio.
+                                Create new images from a text prompt, or upload your own to edit.
                                 <br/>
-                                Or, upload an image to start editing with Gemini.
+                                Powered by Gemini 2.5 Flash Image.
                             </p>
                         </div>
                     )}
@@ -355,26 +309,6 @@ export const ImageView: React.FC = () => {
                                 className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-sm shadow-md"
                                 aria-label="Remove image"
                             > &times; </button>
-                        </div>
-                    )}
-                    {!uploadedImagePreview && (
-                        <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 text-center mb-2">Aspect Ratio</p>
-                            <div className="flex justify-center items-center gap-2 flex-wrap">
-                                {aspectRatios.map(ar => (
-                                    <button
-                                        key={ar}
-                                        onClick={() => setAspectRatio(ar)}
-                                        className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors duration-200 ${
-                                            aspectRatio === ar
-                                                ? 'bg-cyan-500 text-white shadow'
-                                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                        }`}
-                                    >
-                                        {ar}
-                                    </button>
-                                ))}
-                            </div>
                         </div>
                     )}
                     <div className="relative">
