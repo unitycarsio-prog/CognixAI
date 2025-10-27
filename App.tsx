@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>('chat');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme') as Theme;
@@ -35,6 +36,12 @@ const App: React.FC = () => {
   });
 
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (chatHistory.length > 0) {
@@ -150,6 +157,23 @@ const App: React.FC = () => {
     }
   }
 
+  const sidebarProps = {
+    chatHistory,
+    activeChatId,
+    onSelectChat: (id: string) => {
+        setActiveChatId(id);
+        if (isMobile) setIsSidebarOpen(false);
+    },
+    onNewChat: () => {
+        const newChat = handleNewChat();
+        setActiveChatId(newChat.id);
+        if (isMobile) setIsSidebarOpen(false);
+    },
+    onDeleteChat: handleDeleteChat,
+    onRenameChat: handleRenameChat,
+  };
+
+
   return (
     <>
       <AboutModal 
@@ -158,19 +182,29 @@ const App: React.FC = () => {
         onClearHistory={handleClearAllHistory}
       />
       <div className="flex h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 overflow-hidden">
-        <div className={`shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen && mode === 'chat' ? 'w-64' : 'w-0'} overflow-hidden`}>
-          <Sidebar 
-            chatHistory={chatHistory}
-            activeChatId={activeChatId}
-            onSelectChat={setActiveChatId}
-            onNewChat={handleNewChat}
-            onDeleteChat={handleDeleteChat}
-            onRenameChat={handleRenameChat}
-          />
-        </div>
+        {isMobile ? (
+          <>
+            {isSidebarOpen && mode === 'chat' && (
+              <>
+                <div 
+                  className="fixed inset-0 bg-black/60 z-30 animate-fade-in"
+                  onClick={toggleSidebar}
+                ></div>
+                <div className="fixed top-0 left-0 h-full w-64 z-40 animate-slide-in-left">
+                  <Sidebar {...sidebarProps} />
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <div className={`shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen && mode === 'chat' ? 'w-64' : 'w-0'} overflow-hidden`}>
+            <Sidebar {...sidebarProps} />
+          </div>
+        )}
+
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm flex justify-between items-center shrink-0">
-              <div className="flex items-center space-x-2 min-w-0">
+          <header className="bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-2 sm:p-4 shadow-sm flex justify-between items-center shrink-0">
+              <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
                   {mode === 'chat' && (
                       <button 
                           onClick={toggleSidebar}
@@ -183,7 +217,7 @@ const App: React.FC = () => {
                   <div className="flex items-center space-x-3">
                       <BotIcon className="w-8 h-8 text-cyan-500 shrink-0" />
                       <div className="min-w-0">
-                          <h1 className="text-xl font-bold tracking-wider text-gray-900 dark:text-white">Cognix AI</h1>
+                          <h1 className="text-lg sm:text-xl font-bold tracking-wider text-gray-900 dark:text-white">Cognix AI</h1>
                           {mode === 'chat' && activeChatId && (
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                   {chatHistory.find(c => c.id === activeChatId)?.title}
@@ -192,11 +226,11 @@ const App: React.FC = () => {
                       </div>
                   </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                   <nav className="flex items-center bg-gray-200 dark:bg-gray-700/50 rounded-lg p-1">
                   <button
                       onClick={() => setMode('chat')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      className={`px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium rounded-md transition-colors duration-200 ${
                       mode === 'chat'
                           ? 'bg-cyan-500 text-white shadow'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'
@@ -206,7 +240,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                       onClick={() => setMode('image')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      className={`px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium rounded-md transition-colors duration-200 ${
                       mode === 'image'
                           ? 'bg-cyan-500 text-white shadow'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'
@@ -216,7 +250,7 @@ const App: React.FC = () => {
                   </button>
                   <button
                       onClick={() => setMode('live')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      className={`px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium rounded-md transition-colors duration-200 ${
                       mode === 'live'
                           ? 'bg-cyan-500 text-white shadow'
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'

@@ -109,8 +109,18 @@ export const LiveView: React.FC = () => {
         currentInputTranscriptionRef.current = '';
         currentOutputTranscriptionRef.current = '';
 
-        inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-        outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+        const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        
+        if (inputCtx.state === 'suspended') {
+            inputCtx.resume();
+        }
+        if (outputCtx.state === 'suspended') {
+            outputCtx.resume();
+        }
+
+        inputAudioContextRef.current = inputCtx;
+        outputAudioContextRef.current = outputCtx;
         nextStartTimeRef.current = 0;
 
         const createBlob = (data: Float32Array): Blob => {
@@ -131,9 +141,9 @@ export const LiveView: React.FC = () => {
                 onopen: async () => {
                     try {
                         streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        const inputCtx = inputAudioContextRef.current!;
-                        mediaStreamSourceRef.current = inputCtx.createMediaStreamSource(streamRef.current);
-                        scriptProcessorRef.current = inputCtx.createScriptProcessor(4096, 1, 1);
+                        const currentInputCtx = inputAudioContextRef.current!;
+                        mediaStreamSourceRef.current = currentInputCtx.createMediaStreamSource(streamRef.current);
+                        scriptProcessorRef.current = currentInputCtx.createScriptProcessor(4096, 1, 1);
 
                         scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
                             const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
@@ -144,7 +154,7 @@ export const LiveView: React.FC = () => {
                         };
 
                         mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
-                        scriptProcessorRef.current.connect(inputCtx.destination);
+                        scriptProcessorRef.current.connect(currentInputCtx.destination);
                     } catch (err) {
                         console.error("Error getting user media:", err);
                         stopSession();
@@ -152,15 +162,15 @@ export const LiveView: React.FC = () => {
                 },
                 onmessage: async (message: LiveServerMessage) => {
                     try {
-                        const outputCtx = outputAudioContextRef.current!;
+                        const currentOutputCtx = outputAudioContextRef.current!;
                         const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
 
                         if (base64EncodedAudioString) {
-                            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputCtx.currentTime);
-                            const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), outputCtx, 24000, 1);
-                            const source = outputCtx.createBufferSource();
+                            nextStartTimeRef.current = Math.max(nextStartTimeRef.current, currentOutputCtx.currentTime);
+                            const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), currentOutputCtx, 24000, 1);
+                            const source = currentOutputCtx.createBufferSource();
                             source.buffer = audioBuffer;
-                            source.connect(outputCtx.destination);
+                            source.connect(currentOutputCtx.destination);
                             source.addEventListener('ended', () => { outputSourcesRef.current.delete(source) });
                             source.start(nextStartTimeRef.current);
                             nextStartTimeRef.current += audioBuffer.duration;
