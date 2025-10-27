@@ -13,7 +13,7 @@ type Theme = 'light' | 'dark';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>('chat');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
@@ -38,7 +38,15 @@ const App: React.FC = () => {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => {
+      const mobileState = window.innerWidth < 768;
+      setIsMobile(mobileState);
+      if (!mobileState) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -49,7 +57,8 @@ const App: React.FC = () => {
         setActiveChatId(chatHistory[0].id);
       }
     } else {
-      handleNewChat();
+      const newChat = handleNewChat(false); // don't open sidebar on initial create
+      setActiveChatId(newChat.id);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -62,7 +71,6 @@ const App: React.FC = () => {
   }, [theme]);
 
   useEffect(() => {
-    // Also save an empty array to clear it out.
     localStorage.setItem('chatHistoryV2', JSON.stringify(chatHistory));
   }, [chatHistory]);
 
@@ -74,7 +82,7 @@ const App: React.FC = () => {
     setIsSidebarOpen(prev => !prev);
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = (openSidebar = true) => {
     const newChat: ChatSession = {
       id: `chat-${Date.now()}`,
       title: 'New Chat',
@@ -83,7 +91,7 @@ const App: React.FC = () => {
     setChatHistory(prev => [newChat, ...prev]);
     setActiveChatId(newChat.id);
     setMode('chat');
-    if (!isSidebarOpen) setIsSidebarOpen(true);
+    if (openSidebar && !isMobile) setIsSidebarOpen(true);
     return newChat;
   };
 
@@ -165,8 +173,7 @@ const App: React.FC = () => {
         if (isMobile) setIsSidebarOpen(false);
     },
     onNewChat: () => {
-        const newChat = handleNewChat();
-        setActiveChatId(newChat.id);
+        handleNewChat();
         if (isMobile) setIsSidebarOpen(false);
     },
     onDeleteChat: handleDeleteChat,
@@ -190,7 +197,7 @@ const App: React.FC = () => {
                   className="fixed inset-0 bg-black/60 z-30 animate-fade-in"
                   onClick={toggleSidebar}
                 ></div>
-                <div className="fixed top-0 left-0 h-full w-64 z-40 animate-slide-in-left">
+                <div className="fixed top-0 left-0 h-full w-64 z-40 animate-slide-in-left bg-gray-50 dark:bg-gray-800/80 backdrop-blur-sm">
                   <Sidebar {...sidebarProps} />
                 </div>
               </>
@@ -203,7 +210,7 @@ const App: React.FC = () => {
         )}
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-2 sm:p-4 shadow-sm flex justify-between items-center shrink-0">
+          <header className="bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-2 sm:p-3 shadow-sm flex justify-between items-center shrink-0">
               <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
                   {mode === 'chat' && (
                       <button 
@@ -214,10 +221,10 @@ const App: React.FC = () => {
                           <MenuIcon className="w-6 h-6" />
                       </button>
                   )}
-                  <div className="flex items-center space-x-3">
-                      <BotIcon className="w-8 h-8 text-cyan-500 shrink-0" />
+                  <div className="flex items-center space-x-2">
+                      <BotIcon className="w-7 h-7 sm:w-8 sm:h-8 text-cyan-500 shrink-0" />
                       <div className="min-w-0">
-                          <h1 className="text-lg sm:text-xl font-bold tracking-wider text-gray-900 dark:text-white">Cognix AI</h1>
+                          <h1 className="text-base sm:text-lg font-bold tracking-wider text-gray-900 dark:text-white">Cognix AI</h1>
                           {mode === 'chat' && activeChatId && (
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                   {chatHistory.find(c => c.id === activeChatId)?.title}

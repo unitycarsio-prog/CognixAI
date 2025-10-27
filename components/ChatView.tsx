@@ -68,28 +68,22 @@ const TypingEffect: React.FC<{ text: string }> = ({ text }) => {
     const targetTextRef = useRef(text);
 
     useEffect(() => {
-        // Update the ref every time the target text changes
         targetTextRef.current = text;
     }, [text]);
 
     useEffect(() => {
-        // This interval runs continuously and tries to "catch up" the displayed text to the target text.
         const intervalId = setInterval(() => {
             setDisplayedText(prev => {
                 const currentTarget = targetTextRef.current;
                 if (prev.length < currentTarget.length) {
-                    // Add one more character
                     return currentTarget.slice(0, prev.length + 1);
                 }
-                // If we are caught up, don't change the state.
-                // The interval will keep running to check if `targetTextRef` grows.
                 return prev;
             });
-        }, 25); // Typing speed
+        }, 25); 
 
-        // Clean up the interval when the component is unmounted.
         return () => clearInterval(intervalId);
-    }, []); // The empty dependency array means this effect runs only on mount.
+    }, []); 
 
     return (
         <>
@@ -289,7 +283,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
         {messages.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                 <div className="mb-8 text-center">
@@ -329,9 +323,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                 {messages.map((msg, index) => (
                   <div key={msg.id} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''} ${index === messages.length -1 && msg.role === 'model' ? 'animate-fade-in-up' : ''}`}>
                     {msg.role === 'model' && <BotIcon className="w-8 h-8 text-cyan-500 shrink-0 mt-2" />}
-                    <div className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex flex-col gap-2 max-w-[90%] sm:max-w-xl ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                         {msg.parts.map((part, partIndex) => (
-                            <div key={partIndex} className={`max-w-xl p-4 rounded-2xl shadow-sm relative ${msg.role === 'user' ? 'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-800 rounded-bl-none border border-gray-200 dark:border-gray-700'}`}>
+                            <div key={partIndex} className={`p-4 rounded-2xl shadow-sm relative ${msg.role === 'user' ? 'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-800 rounded-bl-none border border-gray-200 dark:border-gray-700'}`}>
                                 {part.imageUrl && (
                                     <div className="relative">
                                         <img src={part.imageUrl} alt="User-uploaded content" className="rounded-lg max-w-xs md:max-w-md" />

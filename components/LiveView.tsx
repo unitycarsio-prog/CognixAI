@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ai } from '../services/gemini';
 import { MicrophoneIcon, StopIcon, BotIcon, UserIcon } from './Icons';
-// FIX: Removed LiveSession from import as it is not an exported member of '@google/genai'.
 import type { LiveServerMessage, Blob } from '@google/genai';
 import { Modality } from '@google/genai';
 
@@ -53,7 +52,6 @@ export const LiveView: React.FC = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
     
-    // FIX: Used ReturnType to get the type of the session promise from `ai.live.connect` directly.
     const sessionPromiseRef = useRef<ReturnType<typeof ai.live.connect> | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const inputAudioContextRef = useRef<AudioContext | null>(null);
@@ -112,11 +110,12 @@ export const LiveView: React.FC = () => {
         const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
         const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         
+        // FIX: Resume AudioContext from suspended state to allow audio playback.
         if (inputCtx.state === 'suspended') {
-            inputCtx.resume();
+            await inputCtx.resume();
         }
         if (outputCtx.state === 'suspended') {
-            outputCtx.resume();
+            await outputCtx.resume();
         }
 
         inputAudioContextRef.current = inputCtx;
@@ -163,6 +162,8 @@ export const LiveView: React.FC = () => {
                 onmessage: async (message: LiveServerMessage) => {
                     try {
                         const currentOutputCtx = outputAudioContextRef.current!;
+                        if (!currentOutputCtx || currentOutputCtx.state === 'closed') return;
+                        
                         const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
 
                         if (base64EncodedAudioString) {
@@ -213,7 +214,8 @@ export const LiveView: React.FC = () => {
                     stopSession();
                 },
                 onclose: () => {
-                    stopSession();
+                    // Session might be closed by the server, so we just update the UI state
+                    setIsRecording(false);
                 },
             },
             config: {
