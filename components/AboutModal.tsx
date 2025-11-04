@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BotIcon, ImageIcon, MicrophoneIcon } from './Icons';
+import { BotIcon, MicrophoneIcon } from './Icons';
 
 interface AboutModalProps {
     isOpen: boolean;
@@ -48,15 +48,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, onClear
                                 title="Conversational Chat"
                                 description="Engage in dynamic, text-based conversations. Powered by Gemini 2.5 Flash for fast and intelligent responses."
                             />
-                             <FeatureCard 
-                                icon={<ImageIcon className="w-6 h-6" />}
-                                title="Image Generation & Editing"
-                                description="Create new images from text prompts or edit your own uploaded pictures with Gemini 2.5 Flash Image."
-                            />
-                             <FeatureCard 
+                            <FeatureCard 
                                 icon={<MicrophoneIcon className="w-6 h-6" />}
-                                title="Live Voice Conversation"
-                                description="Experience real-time, hands-free voice chat. Powered by Gemini 2.5 Flash for ultra-low latency."
+                                title="Live Conversation"
+                                description="Speak directly with the AI in a real-time voice chat for a hands-free, natural interaction."
                             />
                         </div>
                     </div>

@@ -1,21 +1,19 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChatView } from './components/ChatView';
-import { LiveView } from './components/LiveView';
-import { ImageView } from './components/ImageView';
 import { Sidebar } from './components/Sidebar';
 import { AboutModal } from './components/AboutModal';
 import { BotIcon, SunIcon, MoonIcon, MenuIcon, HelpCircleIcon } from './components/Icons';
-import type { ChatMessage, ChatSession } from './types';
+import type { ChatMessage, ChatSession, Mode } from './types';
+import { LiveView } from './components/LiveView';
 
-type Mode = 'chat' | 'live' | 'image';
 type Theme = 'light' | 'dark';
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<Mode>('chat');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [mode, setMode] = useState<Mode>('chat');
   
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme') as Theme;
@@ -90,7 +88,6 @@ const App: React.FC = () => {
     };
     setChatHistory(prev => [newChat, ...prev]);
     setActiveChatId(newChat.id);
-    setMode('chat');
     if (openSidebar && !isMobile) setIsSidebarOpen(true);
     return newChat;
   };
@@ -148,7 +145,10 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (mode) {
+      case 'live':
+        return <LiveView />;
       case 'chat':
+      default:
         return (
           <ChatView 
             key={activeChatId}
@@ -156,23 +156,24 @@ const App: React.FC = () => {
             setMessages={setMessagesForActiveChat} 
           />
         );
-      case 'live':
-        return <LiveView />;
-      case 'image':
-        return <ImageView />;
-      default:
-        return null;
     }
   }
 
   const sidebarProps = {
     chatHistory,
     activeChatId,
+    mode,
+    onSetMode: (newMode: Mode) => {
+        setMode(newMode);
+        if (isMobile) setIsSidebarOpen(false);
+    },
     onSelectChat: (id: string) => {
+        setMode('chat');
         setActiveChatId(id);
         if (isMobile) setIsSidebarOpen(false);
     },
     onNewChat: () => {
+        setMode('chat');
         handleNewChat();
         if (isMobile) setIsSidebarOpen(false);
     },
@@ -191,7 +192,7 @@ const App: React.FC = () => {
       <div className="flex h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans transition-colors duration-300 overflow-hidden">
         {isMobile ? (
           <>
-            {isSidebarOpen && mode === 'chat' && (
+            {isSidebarOpen && (
               <>
                 <div 
                   className="fixed inset-0 bg-black/60 z-30 animate-fade-in"
@@ -204,7 +205,7 @@ const App: React.FC = () => {
             )}
           </>
         ) : (
-          <div className={`shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen && mode === 'chat' ? 'w-64' : 'w-0'} overflow-hidden`}>
+          <div className={`shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
             <Sidebar {...sidebarProps} />
           </div>
         )}
@@ -212,60 +213,26 @@ const App: React.FC = () => {
         <div className="flex flex-col flex-1 min-w-0">
           <header className="bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-2 sm:p-3 shadow-sm flex justify-between items-center shrink-0">
               <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-                  {mode === 'chat' && (
-                      <button 
-                          onClick={toggleSidebar}
-                          className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                          aria-label="Toggle sidebar"
-                      >
-                          <MenuIcon className="w-6 h-6" />
-                      </button>
-                  )}
+                  <button 
+                      onClick={toggleSidebar}
+                      className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                      aria-label="Toggle sidebar"
+                  >
+                      <MenuIcon className="w-6 h-6" />
+                  </button>
                   <div className="flex items-center space-x-2">
                       <BotIcon className="w-7 h-7 sm:w-8 sm:h-8 text-cyan-500 shrink-0" />
                       <div className="min-w-0">
                           <h1 className="text-base sm:text-lg font-bold tracking-wider text-gray-900 dark:text-white">Cognix AI</h1>
-                          {mode === 'chat' && activeChatId && (
+                          {activeChatId && (
                               <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                  {chatHistory.find(c => c.id === activeChatId)?.title}
+                                  {mode === 'live' ? 'Live Conversation' : chatHistory.find(c => c.id === activeChatId)?.title}
                               </p>
                           )}
                       </div>
                   </div>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                  <nav className="flex items-center bg-gray-200 dark:bg-gray-700/50 rounded-lg p-1">
-                  <button
-                      onClick={() => setMode('chat')}
-                      className={`px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium rounded-md transition-colors duration-200 ${
-                      mode === 'chat'
-                          ? 'bg-cyan-500 text-white shadow'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'
-                      }`}
-                  >
-                      Chat
-                  </button>
-                  <button
-                      onClick={() => setMode('image')}
-                      className={`px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium rounded-md transition-colors duration-200 ${
-                      mode === 'image'
-                          ? 'bg-cyan-500 text-white shadow'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'
-                      }`}
-                  >
-                      Image
-                  </button>
-                  <button
-                      onClick={() => setMode('live')}
-                      className={`px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium rounded-md transition-colors duration-200 ${
-                      mode === 'live'
-                          ? 'bg-cyan-500 text-white shadow'
-                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'
-                      }`}
-                  >
-                      Live
-                  </button>
-                  </nav>
                   <button
                       onClick={() => setIsAboutModalOpen(true)}
                       className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"

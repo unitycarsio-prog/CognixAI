@@ -1,11 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { ChatSession } from '../types';
-import { NewChatIcon, TrashIcon, PencilIcon } from './Icons';
+import type { ChatSession, Mode } from '../types';
+import { NewChatIcon, TrashIcon, PencilIcon, MicrophoneIcon } from './Icons';
 
 interface SidebarProps {
   chatHistory: ChatSession[];
   activeChatId: string | null;
+  mode: Mode;
+  onSetMode: (mode: Mode) => void;
   onSelectChat: (id: string) => void;
   onNewChat: () => void;
   onDeleteChat: (id: string) => void;
@@ -15,6 +17,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   chatHistory,
   activeChatId,
+  mode,
+  onSetMode,
   onSelectChat,
   onNewChat,
   onDeleteChat,
@@ -67,13 +71,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
           New Chat
         </button>
       </div>
-      <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+      
+      <div className="p-2 space-y-1 border-t border-gray-200 dark:border-gray-700">
+        <h3 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Features</h3>
+        <button
+            onClick={() => onSetMode('live')}
+            className={`w-full flex items-center gap-3 p-2 rounded-lg text-sm font-medium transition-colors ${
+                mode === 'live'
+                ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-200'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+        >
+            <MicrophoneIcon className="w-5 h-5" />
+            Live Conversation
+        </button>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto p-2 space-y-1 border-t border-gray-200 dark:border-gray-700">
+        <h3 className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Chat History</h3>
         {chatHistory.map((chat) => (
           <div
             key={chat.id}
             onClick={() => editingChatId !== chat.id && onSelectChat(chat.id)}
             className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
-              activeChatId === chat.id
+              activeChatId === chat.id && mode === 'chat'
                 ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-200'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}

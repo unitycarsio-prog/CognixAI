@@ -1,22 +1,8 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage, ChatPart, SearchResult } from '../types';
 import { ai } from '../services/gemini';
-import { UserIcon, BotIcon, SendIcon, ImageIcon, LinkIcon, SpeakerIcon, StopIcon, SparklesIcon, HelpCircleIcon, CodeIcon, PlaneIcon } from './Icons';
+import { UserIcon, BotIcon, SendIcon, LinkIcon, SpeakerIcon, StopIcon, SparklesIcon, HelpCircleIcon, CodeIcon, PlaneIcon } from './Icons';
 import { Modality } from '@google/genai';
-
-interface ChatViewProps {
-  messages: ChatMessage[];
-  setMessages: (updater: React.SetStateAction<ChatMessage[]>) => void;
-}
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = (error) => reject(error);
-  });
 
 // Audio decoding functions remain unchanged
 function decode(base64: string) {
@@ -93,15 +79,17 @@ const TypingEffect: React.FC<{ text: string }> = ({ text }) => {
     );
 };
 
+// FIX: Added ChatViewProps interface definition to resolve typing error.
+interface ChatViewProps {
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+}
 
 export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [ttsState, setTtsState] = useState<{ loadingId: string | null; playingId: string | null }>({ loadingId: null, playingId: null });
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -182,50 +170,29 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         setTtsState({ loadingId: null, playingId: null });
     }
   }, [ttsState.playingId, stopAudio, setMessages]);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        setImage(file);
-        setImagePreview(URL.createObjectURL(file));
-        e.target.value = '';
-    }
-  };
   
   const handleSendMessage = useCallback(async (prompt?: string) => {
     const textInput = (prompt || input).trim();
-    if ((!textInput && !image) || isLoading) return;
+    if (!textInput || isLoading) return;
   
-    const userMessageParts: ChatPart[] = [];
-    if (textInput) userMessageParts.push({ text: textInput });
-    if (image && imagePreview) userMessageParts.push({ imageUrl: imagePreview, text: textInput });
+    const userMessageParts: ChatPart[] = [{ text: textInput }];
       
     const userMessage = createMessage('user', userMessageParts);
     const modelPlaceholder = createMessage('model', [{ text: '' }]);
     setMessages((prev) => [...prev, userMessage, modelPlaceholder]);
     
     setInput('');
-    setImage(null);
-    setImagePreview(null);
     setIsLoading(true);
   
     try {
       const history = messages.map(msg => ({
         role: msg.role,
         parts: msg.parts
-          .filter(part => part.text && !part.imageUrl)
+          .filter(part => part.text)
           .map(part => ({ text: part.text! }))
       })).filter(msg => msg.parts.length > 0);
       
-      const userContentPartsForApi: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [];
-      if (textInput) userContentPartsForApi.push({ text: textInput });
-      if (image) {
-        userContentPartsForApi.push({ 
-          inlineData: { mimeType: image.type, data: await fileToBase64(image) } 
-        });
-      }
-      
-      const contents = [...history, { role: 'user', parts: userContentPartsForApi }];
+      const contents = [...history, { role: 'user', parts: [{ text: textInput }] }];
 
       const stream = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
@@ -272,7 +239,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     } finally {
       setIsLoading(false);
     }
-  }, [input, image, imagePreview, isLoading, setMessages, messages]);
+  }, [input, isLoading, setMessages, messages]);
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -326,13 +293,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                     <div className={`flex flex-col gap-2 max-w-[90%] sm:max-w-xl ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                         {msg.parts.map((part, partIndex) => (
                             <div key={partIndex} className={`p-4 rounded-2xl shadow-sm relative ${msg.role === 'user' ? 'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-800 rounded-bl-none border border-gray-200 dark:border-gray-700'}`}>
-                                {part.imageUrl && (
-                                    <div className="relative">
-                                        <img src={part.imageUrl} alt="User-uploaded content" className="rounded-lg max-w-xs md:max-w-md" />
-                                        {part.text && <p className="text-sm p-2 bg-black/20 dark:bg-black/30 rounded-b-lg absolute bottom-0 w-full">{part.text}</p>}
-                                    </div>
-                                )}
-                                {part.text && !part.imageUrl && (
+                                {part.text && (
                                     <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap pr-8">
                                         {isLoading && msg.id === messages[messages.length - 1].id ? (
                                             <TypingEffect text={part.text || ''} />
@@ -354,7 +315,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                                         </div>
                                     </div>
                                 )}
-                                {msg.role === 'model' && part.text && !part.imageUrl && !isLoading && (
+                                {msg.role === 'model' && part.text && !isLoading && (
                                     <button
                                         onClick={() => handlePlayAudio(part.text!, msg.id)}
                                         className="absolute bottom-1 right-1 p-1.5 rounded-full text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -376,34 +337,20 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       </div>
       <div className="p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
         <div className="max-w-3xl mx-auto">
-            {imagePreview && (
-              <div className="mb-2 relative w-24 h-24">
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-lg" />
-                <button
-                  onClick={() => { setImage(null); setImagePreview(null); }}
-                  className="absolute -top-2 -right-2 bg-gray-900 text-white rounded-full p-0.5 leading-none w-6 h-6 flex items-center justify-center text-lg shadow-md"
-                  aria-label="Remove image"
-                > &times; </button>
-              </div>
-            )}
             <div className="flex items-end p-1.5 bg-gray-100/50 dark:bg-gray-800/50 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
-                <button onClick={() => fileInputRef.current?.click()} className="p-2 ml-1 text-gray-500 dark:text-gray-400 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors shrink-0" aria-label="Attach image">
-                    <ImageIcon className="w-6 h-6" />
-                </button>
-                <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
                 <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask me anything..."
-                    className="w-full px-2 py-2 bg-transparent focus:outline-none resize-none max-h-48"
+                    className="w-full px-4 py-2 bg-transparent focus:outline-none resize-none max-h-48"
                     rows={1}
                     disabled={isLoading}
                 />
                 <button
                     onClick={() => handleSendMessage()}
-                    disabled={(!input.trim() && !image) || isLoading}
+                    disabled={!input.trim() || isLoading}
                     className="p-3 mr-1 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 text-white disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 hover:from-cyan-600 hover:to-blue-600 transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shrink-0 shadow-md hover:shadow-lg disabled:shadow-none"
                     aria-label="Send message"
                 >

@@ -1,3 +1,7 @@
+
+
+export type Mode = 'chat' | 'live';
+
 export interface SearchResult {
   uri: string;
   title: string;
@@ -5,7 +9,6 @@ export interface SearchResult {
 
 export interface ChatPart {
   text?: string;
-  imageUrl?: string;
   searchResults?: SearchResult[];
 }
 
