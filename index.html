@@ -3,61 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Cognix AI</title>
     <script>
       // Explicitly configure Tailwind CSS to use 'class' for dark mode.
-      // This ensures the theme toggle in the app works correctly.
       tailwind.config = {
         darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
       }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @keyframes fade-in {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
       .animate-fade-in {
         animation: fade-in 0.3s ease-out forwards;
       }
       @keyframes fade-in-up {
-        from {
-          opacity: 0;
-          transform: translateY(1rem) scale(0.98);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
       }
       .animate-fade-in-up {
-        animation: fade-in-up 0.4s ease-out forwards;
-      }
-      @keyframes blink {
-        50% {
-          opacity: 0;
-        }
+        animation: fade-in-up 0.3s ease-out forwards;
       }
       .blinking-cursor {
         display: inline-block;
-        width: 0.5em;
+        width: 2px;
         height: 1em;
         background-color: currentColor;
         animation: blink 1s step-end infinite;
-        vertical-align: bottom;
+        vertical-align: middle;
         margin-left: 2px;
       }
-      @keyframes slide-in-left {
-        from { transform: translateX(-100%); }
-        to { transform: translateX(0); }
+      @keyframes blink { 50% { opacity: 0; } }
+      
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
       }
-      .animate-slide-in-left {
-        animation: slide-in-left 0.3s ease-out forwards;
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
       }
     </style>
   <script type="importmap">
@@ -71,7 +66,7 @@
 }
 </script>
 </head>
-  <body>
+  <body class="bg-white dark:bg-gray-950 transition-colors duration-300 text-gray-900 dark:text-gray-100">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

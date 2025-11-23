@@ -220,7 +220,6 @@ export const LiveView: React.FC = () => {
                     stopSession();
                 },
                 onclose: () => {
-                    // Session might be closed by the server, so we just update the UI state
                     setIsRecording(false);
                 },
             },
@@ -228,7 +227,7 @@ export const LiveView: React.FC = () => {
                 responseModalities: [Modality.AUDIO],
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
-                systemInstruction: "You are Cognix AI, a friendly and helpful assistant. Your entire identity is Cognix AI. You must NEVER mention Google. Your goal is to provide short, engaging, and highly effective conversational responses. Keep your answers to one or two sentences if possible. Absolutely NO markdown.",
+                systemInstruction: "You are Cognix AI. Be concise and professional. Do not use excessive markdown.",
             },
         });
     }, [stopSession]);
@@ -237,41 +236,37 @@ export const LiveView: React.FC = () => {
         isRecording ? stopSession() : startSession();
     };
 
-    useEffect(() => {
-        return () => {
-            stopSession();
-        };
-    }, [stopSession]);
+    useEffect(() => { return () => { stopSession(); }; }, [stopSession]);
 
     return (
-        <div className="flex flex-col h-full items-center justify-center p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors overflow-hidden relative">
-            <div className={`absolute inset-0 bg-grid-pattern dark:bg-grid-pattern-dark ${isRecording ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}></div>
-            
-            <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 text-center transition-all duration-500 ${isRecording ? 'opacity-0 -translate-y-8' : 'opacity-100 translate-y-0'}`}>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Live Conversation</h2>
-                <p className="mt-2 max-w-md text-gray-500 dark:text-gray-400">Tap the orb to start a real-time voice chat with Cognix AI.</p>
+        <div className="flex flex-col h-full items-center justify-center p-4 relative overflow-hidden">
+            <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 text-center transition-all duration-500 z-10 ${isRecording ? 'opacity-0 -translate-y-8' : 'opacity-100 translate-y-0'}`}>
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
+                     <MicrophoneIcon className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">Live Mode</h2>
+                <p className="mt-2 max-w-md text-gray-500 dark:text-gray-400 text-base">Talk to Cognix naturally in real-time.</p>
             </div>
 
-            <div ref={transcriptContainerRef} className={`w-full max-w-3xl h-full pt-4 pb-40 overflow-y-auto space-y-4 transition-opacity duration-500 ${isRecording ? 'opacity-100' : 'opacity-0'}`}>
+            <div ref={transcriptContainerRef} className={`w-full max-w-3xl h-full pt-4 pb-40 overflow-y-auto space-y-4 transition-opacity duration-500 z-10 ${isRecording ? 'opacity-100' : 'opacity-0'}`}>
                 {transcripts.map((t, i) => (
                     <div key={i} className={`flex items-end gap-2 animate-fade-in-up ${t.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {t.speaker === 'model' && <BotIcon className="w-6 h-6 text-cyan-500 shrink-0 mb-1" />}
-                        <div className={`px-4 py-2 rounded-2xl max-w-lg shadow-sm ${t.speaker === 'user' ? 'bg-cyan-500 text-white rounded-br-none' : 'bg-gray-100 dark:bg-gray-800 rounded-bl-none'}`}>
+                        {t.speaker === 'model' && <div className="w-8 h-8 rounded-full bg-black dark:bg-white flex items-center justify-center"><BotIcon className="w-4 h-4 text-white dark:text-black"/></div>}
+                        <div className={`px-5 py-3 rounded-lg max-w-lg text-base ${t.speaker === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100'}`}>
                             {t.text}
                         </div>
-                        {t.speaker === 'user' && <UserIcon className="w-6 h-6 text-gray-400 shrink-0 mb-1" />}
                     </div>
                 ))}
             </div>
 
-            <div className={`absolute bottom-0 left-0 right-0 h-40 flex justify-center items-center transition-opacity duration-500 ${isRecording ? 'opacity-100' : 'opacity-0'}`}>
-                {Array.from({ length: 50 }).map((_, i) => (
+            <div className={`absolute bottom-0 left-0 right-0 h-48 flex justify-center items-end pb-10 gap-1 transition-opacity duration-500 ${isRecording ? 'opacity-100' : 'opacity-0'}`}>
+                {Array.from({ length: 30 }).map((_, i) => (
                     <div
                         key={i}
-                        className="w-1 bg-cyan-400 rounded-full"
+                        className="w-1.5 bg-blue-600 rounded-full"
                         style={{
-                            height: `${Math.random() * 60 + 10}%`,
-                            animation: `wave 1.5s ease-in-out ${i * 0.05}s infinite alternate`
+                            height: `${Math.random() * 50 + 10}%`,
+                            animation: `wave 1s ease-in-out ${i * 0.05}s infinite alternate`
                         }}
                     ></div>
                 ))}
@@ -279,39 +274,17 @@ export const LiveView: React.FC = () => {
 
             <button 
                 onClick={handleToggleRecording} 
-                className={`group absolute z-10 flex items-center justify-center rounded-full shadow-2xl transition-all duration-500 ease-in-out
+                className={`group absolute z-20 flex items-center justify-center rounded-full shadow-xl transition-all duration-500 ease-out
                     ${isRecording 
-                        ? 'bottom-8 w-20 h-20 bg-red-500 hover:bg-red-600' 
-                        : 'top-1/2 -translate-y-1/2 w-32 h-32 bg-gray-100 dark:bg-gray-800 hover:scale-105 animate-pulsate'}`}
-                aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+                        ? 'bottom-10 w-16 h-16 bg-red-600 hover:bg-red-700 rotate-0' 
+                        : 'top-1/2 -translate-y-1/2 w-24 h-24 bg-blue-600 hover:bg-blue-700'}`}
             >
-                <div className={`absolute inset-0 bg-cyan-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500 ${isRecording ? 'opacity-0' : 'opacity-100'}`}></div>
-                <div className="relative text-white">
-                    {isRecording ? <StopIcon className="w-8 h-8" /> : <MicrophoneIcon className="w-12 h-12 text-cyan-500" />}
-                </div>
+                {isRecording ? <StopIcon className="w-6 h-6 text-white" /> : <MicrophoneIcon className="w-8 h-8 text-white" />}
             </button>
             
             <style>
                 {`
-                .bg-grid-pattern {
-                    background-image: linear-gradient(rgba(0, 180, 255, 0.03) 1px, transparent 1px), linear-gradient(to right, rgba(0, 180, 255, 0.03) 1px, transparent 1px);
-                    background-size: 2rem 2rem;
-                }
-                .dark .bg-grid-pattern-dark {
-                    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-                    background-size: 2rem 2rem;
-                }
-                @keyframes pulsate {
-                    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 187, 255, 0.3); }
-                    50% { transform: scale(1.05); box-shadow: 0 0 20px 10px rgba(0, 187, 255, 0); }
-                }
-                .animate-pulsate {
-                    animation: pulsate 2.5s infinite ease-in-out;
-                }
-                @keyframes wave {
-                    0% { transform: scaleY(0.1); opacity: 0.3; }
-                    100% { transform: scaleY(1); opacity: 1; }
-                }
+                @keyframes wave { 0% { transform: scaleY(0.2); } 100% { transform: scaleY(1); } }
                 `}
             </style>
         </div>

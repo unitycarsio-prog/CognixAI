@@ -1,16 +1,7 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { ai } from '../services/gemini';
-import { BotIcon, DownloadIcon, ImageIcon, SparklesIcon } from './Icons';
-import { Modality } from '@google/genai';
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = (error) => reject(error);
-  });
+import { DownloadIcon, ImageIcon, SparklesIcon } from './Icons';
 
 const addWatermark = async (base64ImageUrl: string): Promise<string> => {
     try {
@@ -98,97 +89,55 @@ export const ImageView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [uploadedImage, setUploadedImage] = useState<File | null>(null);
-    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
     const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setUploadedImage(file);
-            setUploadedImagePreview(URL.createObjectURL(file));
-            setGeneratedImage(null);
-            setError(null);
-            e.target.value = '';
-        }
-    };
 
     const handleGenerate = async () => {
-        if ((!prompt.trim() && !uploadedImage) || isLoading) return;
+        if (!prompt.trim() || isLoading) return;
 
         setIsLoading(true);
         setGeneratedImage(null);
         setError(null);
 
         try {
-            const apiParts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [];
-            
-            if (uploadedImage) {
-                const base64Data = await fileToBase64(uploadedImage);
-                apiParts.push({
-                    inlineData: { mimeType: uploadedImage.type, data: base64Data },
-                });
-            }
-
-            if (prompt.trim()) {
-                apiParts.push({ text: prompt.trim() });
-            } else if (!uploadedImage) {
-                throw new Error("A prompt is required for image generation.");
-            }
-            
+            // Using gemini-2.5-flash-image (Imagen 1 equivalent)
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
-                contents: { parts: apiParts },
-                config: { responseModalities: [Modality.IMAGE] },
+                contents: {
+                    parts: [
+                        { text: `Create an image of ${prompt.trim()}` }
+                    ],
+                },
+                config: {
+                   // Note: responseMimeType and responseSchema are NOT supported for this model.
+                }
             });
+            
+            let foundImage = false;
+            let textResponse = "";
 
-            const candidate = response.candidates?.[0];
-
-            if (response.promptFeedback?.blockReason) {
-                let errorMessage = `Image generation was blocked.\nReason: ${response.promptFeedback.blockReason}.`;
-                const blockedRatings = response.promptFeedback.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                if (blockedRatings && blockedRatings.length > 0) {
-                    errorMessage += `\nBlocked Categories: ${blockedRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                }
-                throw new Error(errorMessage);
-            }
-            if (candidate && candidate.finishReason && candidate.finishReason !== 'STOP') {
-                let errorMessage = `Image generation failed.\nReason: ${candidate.finishReason}.`;
-                const safetyRatings = candidate.safetyRatings?.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                if (safetyRatings && safetyRatings.length > 0) {
-                    errorMessage += `\nTriggered Categories: ${safetyRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                }
-                throw new Error(errorMessage);
-            }
-            const imagePart = candidate?.content?.parts?.find(p => p.inlineData);
-            const generatedImageBytes = imagePart?.inlineData?.data;
-
-            if (!generatedImageBytes) {
-                let finalErrorMessage = "The model did not return an image. This could be due to a content issue with the prompt or a temporary model error.";
-                const allSafetyRatings = candidate?.safetyRatings;
-                if (allSafetyRatings && allSafetyRatings.length > 0) {
-                    const highProbRatings = allSafetyRatings.filter(r => r.probability !== 'NEGLIGIBLE' && r.probability !== 'LOW');
-                    if (highProbRatings.length > 0) {
-                        let errorMessage = `Image generation was blocked due to safety filters.`;
-                        errorMessage += `\nTriggered Categories: ${highProbRatings.map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ')}.`;
-                        throw new Error(errorMessage);
-                    } else {
-                        finalErrorMessage = "The model did not return an image. While no high-risk content was detected, the prompt may have touched on sensitive topics. Please try rephrasing your prompt.";
+            if (response.candidates && response.candidates.length > 0) {
+                for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData) {
+                        const base64EncodeString = part.inlineData.data;
+                        const mimeType = part.inlineData.mimeType || 'image/png';
+                        const fullBase64Url = `data:${mimeType};base64,${base64EncodeString}`;
+                        const watermarkedImageUrl = await addWatermark(fullBase64Url);
+                        setGeneratedImage(watermarkedImageUrl);
+                        foundImage = true;
+                        break;
+                    } else if (part.text) {
+                        textResponse += part.text;
                     }
                 }
-                if (!candidate) {
-                    finalErrorMessage = "The model returned an empty response. This could be a network issue or an unfulfillable prompt."
+            }
+
+            if (!foundImage) {
+                 if (textResponse) {
+                    throw new Error(textResponse);
                 }
-                throw new Error(finalErrorMessage);
+                throw new Error("The model did not return an image. This could be due to content safety filters or the prompt not triggering image generation.");
             }
             
-            const fullBase64Url = `data:${imagePart?.inlineData?.mimeType};base64,${generatedImageBytes}`;
-            const watermarkedImageUrl = await addWatermark(fullBase64Url);
-            setGeneratedImage(watermarkedImageUrl);
-            
-            setUploadedImage(null);
-            setUploadedImagePreview(null);
             setPrompt('');
 
         } catch (err) {
@@ -199,9 +148,9 @@ export const ImageView: React.FC = () => {
             const isSafetyError = safetyKeywords.some(keyword => errorMessage.toUpperCase().includes(keyword));
 
             if (isSafetyError) {
-                errorMessage += "\n\nNote: Generating images of specific people, especially public figures, is often restricted to prevent misuse. Please try a more generic prompt.";
+                errorMessage += "\n\nNote: Generating images of specific people, especially public figures, is often restricted. Please try a more generic prompt.";
             }
-        
+            
             setError(errorMessage);
         } finally {
             setIsLoading(false);
@@ -212,7 +161,7 @@ export const ImageView: React.FC = () => {
         if (!generatedImage) return;
         const link = document.createElement('a');
         link.href = generatedImage;
-        link.download = `cognix-ai-image-${Date.now()}.png`;
+        link.download = `cognix-ai-imagen-${Date.now()}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -253,8 +202,8 @@ export const ImageView: React.FC = () => {
                 <div className="w-full max-w-2xl text-center">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center space-y-4">
-                            <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-gray-600 dark:text-gray-300">Generating your vision...</p>
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-gray-600 dark:text-gray-300">Creating masterpiece with Imagen 1...</p>
                         </div>
                     ) : error ? (
                         <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
@@ -262,78 +211,51 @@ export const ImageView: React.FC = () => {
                             <p className="whitespace-pre-wrap mt-1">{error}</p>
                         </div>
                     ) : generatedImage ? (
-                        <div className="relative group">
+                        <div className="relative group animate-fade-in-up">
                             <img
                                 src={generatedImage}
                                 alt="Generated by Cognix AI"
-                                className="rounded-lg shadow-lg mx-auto max-h-[50vh] sm:max-h-[60vh] cursor-zoom-in transition-transform group-hover:scale-105"
+                                className="rounded-xl shadow-2xl mx-auto max-h-[60vh] cursor-zoom-in transition-transform group-hover:scale-[1.02]"
                                 onClick={() => setFullScreenImage(generatedImage)}
                             />
                             <button
                                 onClick={handleDownload}
-                                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-4 right-4 p-3 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
                                 aria-label="Download image"
                             >
                                 <DownloadIcon className="w-6 h-6" />
                             </button>
                         </div>
-                    ) : uploadedImagePreview ? (
-                        <div className="relative group">
-                           <img
-                                src={uploadedImagePreview}
-                                alt="Uploaded for editing"
-                                className="rounded-lg shadow-lg mx-auto max-h-[50vh] sm:max-h-[60vh] cursor-zoom-in transition-transform group-hover:scale-105"
-                                onClick={() => setFullScreenImage(uploadedImagePreview)}
-                           />
-                        </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
-                            <ImageIcon className="w-24 h-24 text-cyan-500/50 mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Image Generation &amp; Editing</h2>
-                            <p className="mt-2 max-w-md">
-                                Create new images from a text prompt, or upload your own to edit.
-                                <br/>
-                                Powered by Gemini 2.5 Flash Image.
+                        <div className="flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400 animate-fade-in">
+                            <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
+                                <ImageIcon className="w-16 h-16 text-blue-600" />
+                            </div>
+                            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Imagen 1</h2>
+                            <p className="mt-2 max-w-md text-lg">
+                                Generate fast, high-quality images from text prompts.
                             </p>
                         </div>
                     )}
                 </div>
             </div>
-            <div className="p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
+            <div className="p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
                 <div className="max-w-3xl mx-auto">
-                    {uploadedImagePreview && (
-                        <div className="mb-2 relative w-24 h-24">
-                            <img src={uploadedImagePreview} alt="Preview" className="w-full h-full object-cover rounded-lg" />
-                            <button
-                                onClick={() => { setUploadedImage(null); setUploadedImagePreview(null); }}
-                                className="absolute -top-2 -right-2 bg-gray-800 text-white rounded-full p-1 leading-none w-6 h-6 flex items-center justify-center text-sm shadow-md"
-                                aria-label="Remove image"
-                            > &times; </button>
-                        </div>
-                    )}
                     <div className="relative">
                         <textarea
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder={uploadedImagePreview ? "Describe how you want to edit the image..." : "Describe the image you want to create..."}
-                            className="w-full p-4 pr-40 bg-gray-100 dark:bg-gray-800 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:outline-none resize-none"
+                            placeholder="Describe the image you want to create in detail..."
+                            className="w-full p-4 pr-36 bg-gray-100 dark:bg-gray-800 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:outline-none resize-none transition-all shadow-sm"
                             rows={2}
                             disabled={isLoading}
                         />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-2">
-                            <button 
-                                onClick={() => fileInputRef.current?.click()} 
-                                className="p-2 text-gray-500 dark:text-gray-400 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors" 
-                                aria-label="Upload image"
-                            >
-                                <ImageIcon className="w-6 h-6" />
-                            </button>
-                            <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <button
                                 onClick={handleGenerate}
-                                disabled={(!prompt.trim() && !uploadedImage) || isLoading}
-                                className="px-4 py-2 flex items-center gap-2 rounded-lg bg-cyan-500 text-white disabled:bg-cyan-300 dark:disabled:bg-cyan-700 hover:bg-cyan-600 transition-colors"
+                                disabled={!prompt.trim() || isLoading}
+                                className="px-6 py-2.5 flex items-center gap-2 rounded-xl bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700 transition-all shadow-md hover:shadow-lg transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
                                 aria-label="Generate Image"
                             >
                                 <SparklesIcon className="w-5 h-5" />
