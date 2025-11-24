@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { BotIcon, MicrophoneIcon, ImageIcon, SearchIcon } from './Icons';
+import { BotIcon, MicrophoneIcon, SearchIcon } from './Icons';
 
 interface AboutModalProps {
     isOpen: boolean;
@@ -52,11 +52,6 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, onClear
                                 icon={<SearchIcon className="w-5 h-5" />}
                                 title="Live Search & Maps"
                                 description="Access real-time information and location-based answers with Google Search and Maps."
-                            />
-                             <FeatureCard 
-                                icon={<ImageIcon className="w-5 h-5" />}
-                                title="Image Generation"
-                                description="Generate high-quality images from text prompts using Imagen."
                             />
                             <FeatureCard 
                                 icon={<MicrophoneIcon className="w-5 h-5" />}

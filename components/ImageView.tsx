@@ -99,43 +99,33 @@ export const ImageView: React.FC = () => {
         setError(null);
 
         try {
-            // Using gemini-2.5-flash-image (Imagen 1 equivalent)
+            // Using gemini-2.5-flash-image (Imagen 1 equivalent/Nano Banana)
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash-image',
                 contents: {
-                    parts: [
-                        { text: `Create an image of ${prompt.trim()}` }
-                    ],
-                },
-                config: {
-                   // Note: responseMimeType and responseSchema are NOT supported for this model.
+                    parts: [{ text: "Generate an image of " + prompt.trim() }]
                 }
             });
             
-            let foundImage = false;
-            let textResponse = "";
+            let base64EncodeString: string | undefined;
 
-            if (response.candidates && response.candidates.length > 0) {
+            if (response.candidates?.[0]?.content?.parts) {
                 for (const part of response.candidates[0].content.parts) {
                     if (part.inlineData) {
-                        const base64EncodeString = part.inlineData.data;
-                        const mimeType = part.inlineData.mimeType || 'image/png';
-                        const fullBase64Url = `data:${mimeType};base64,${base64EncodeString}`;
-                        const watermarkedImageUrl = await addWatermark(fullBase64Url);
-                        setGeneratedImage(watermarkedImageUrl);
-                        foundImage = true;
+                        base64EncodeString = part.inlineData.data;
                         break;
-                    } else if (part.text) {
-                        textResponse += part.text;
                     }
                 }
             }
 
-            if (!foundImage) {
-                 if (textResponse) {
-                    throw new Error(textResponse);
-                }
-                throw new Error("The model did not return an image. This could be due to content safety filters or the prompt not triggering image generation.");
+            if (base64EncodeString) {
+                const fullBase64Url = `data:image/jpeg;base64,${base64EncodeString}`;
+                const watermarkedImageUrl = await addWatermark(fullBase64Url);
+                setGeneratedImage(watermarkedImageUrl);
+            } else {
+                // Check if the model returned text instead (refusal or misunderstanding)
+                const textResponse = response.text;
+                throw new Error(textResponse || "The model did not return an image.");
             }
             
             setPrompt('');
@@ -149,6 +139,8 @@ export const ImageView: React.FC = () => {
 
             if (isSafetyError) {
                 errorMessage += "\n\nNote: Generating images of specific people, especially public figures, is often restricted. Please try a more generic prompt.";
+            } else if (errorMessage.includes("404")) {
+                errorMessage = "Model not found. Please try again later.";
             }
             
             setError(errorMessage);
@@ -161,7 +153,7 @@ export const ImageView: React.FC = () => {
         if (!generatedImage) return;
         const link = document.createElement('a');
         link.href = generatedImage;
-        link.download = `cognix-ai-imagen-${Date.now()}.png`;
+        link.download = `cognix-ai-imagen-${Date.now()}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -203,7 +195,7 @@ export const ImageView: React.FC = () => {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center space-y-4">
                             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-gray-600 dark:text-gray-300">Creating masterpiece with Imagen 1...</p>
+                            <p className="text-gray-600 dark:text-gray-300">Creating masterpiece with Imagen 1.0...</p>
                         </div>
                     ) : error ? (
                         <div className="p-4 rounded-lg bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300">
@@ -231,7 +223,7 @@ export const ImageView: React.FC = () => {
                             <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
                                 <ImageIcon className="w-16 h-16 text-blue-600" />
                             </div>
-                            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Imagen 1</h2>
+                            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Imagen 1.0</h2>
                             <p className="mt-2 max-w-md text-lg">
                                 Generate fast, high-quality images from text prompts.
                             </p>

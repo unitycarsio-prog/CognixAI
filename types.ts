@@ -1,5 +1,5 @@
 
-export type Mode = 'chat' | 'live' | 'image';
+export type Mode = 'chat' | 'live';
 
 export interface SearchResult {
   uri: string;

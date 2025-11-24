@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChatSession, Mode } from '../types';
-import { NewChatIcon, TrashIcon, PencilIcon, MicrophoneIcon, BotIcon, ImageIcon } from './Icons';
+import { NewChatIcon, TrashIcon, PencilIcon, MicrophoneIcon, BotIcon } from './Icons';
 
 interface SidebarProps {
   chatHistory: ChatSession[];
@@ -92,17 +92,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
             <MicrophoneIcon className={`w-5 h-5 ${mode === 'live' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
             Live Conversation
-        </button>
-        <button
-            onClick={() => onSetMode('image')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                mode === 'image'
-                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
-        >
-            <ImageIcon className={`w-5 h-5 ${mode === 'image' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`} />
-            Imagen 1
         </button>
       </div>
 

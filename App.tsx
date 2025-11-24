@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChatView } from './components/ChatView';
-import { ImageView } from './components/ImageView';
 import { LiveView } from './components/LiveView';
 import { Sidebar } from './components/Sidebar';
 import { MenuIcon, SunIcon, MoonIcon, HelpCircleIcon } from './components/Icons';
@@ -11,7 +10,8 @@ import type { ChatMessage, ChatSession, Mode } from './types';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>('chat');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile toggle
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true); // Desktop toggle
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   
@@ -51,17 +51,17 @@ const App: React.FC = () => {
     [chatHistory, activeChatId]
   );
 
+  // Load messages when active chat changes
   useEffect(() => {
     if (currentChat) {
       setMessages(currentChat.messages);
     } else {
       setMessages([]);
     }
-  }, [currentChat]);
+  }, [currentChat?.id]); // Only trigger if ID changes to avoid circular loops
 
   const generateSmartTitle = async (chatId: string, text: string) => {
     try {
-      // Use gemini-2.5-flash for fast title generation
       const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [{ role: 'user', parts: [{ text: `Generate a brief, creative, and relevant title (2-5 words) for a conversation starting with: "${text}". If the input is a simple greeting like "hi" or "hello", use a generic friendly title like "Friendly Chat" or "New Conversation". Do not use quotes.` }] }]
@@ -73,40 +73,42 @@ const App: React.FC = () => {
         ));
       }
     } catch (error) {
-      console.error("Failed to generate title", error);
+      // Silently fail
     }
   };
 
+  // Sync messages to history (Fixes Duplicate Chat Issue)
+  useEffect(() => {
+    // If we have messages but no active ID, it means we started a new chat
+    if (messages.length > 0 && !activeChatId) {
+       // Check if the first message is empty (placeholder initialization) to avoid creating sessions for empty states
+       if (messages[0].parts[0]?.text) {
+          const newId = Date.now().toString();
+          const firstUserText = messages[0].parts.find(p => p.text)?.text || 'New Chat';
+          
+          const newSession: ChatSession = {
+            id: newId,
+            title: firstUserText.slice(0, 30) + (firstUserText.length > 30 ? '...' : ''), // Fallback title
+            messages: messages
+          };
+          
+          setChatHistory(prev => [newSession, ...prev]);
+          setActiveChatId(newId);
+          generateSmartTitle(newId, firstUserText);
+       }
+    } else if (activeChatId && messages.length > 0) {
+       // Update existing session
+       // Optimization: only update if messages actually differ from current history to prevent loops?
+       // React state setter is mostly efficient enough.
+       setChatHistory(prev => prev.map(session => 
+         session.id === activeChatId ? { ...session, messages } : session
+       ));
+    }
+  }, [messages, activeChatId]);
+
   const handleUpdateMessages = (newMessages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
     setMessages(prev => {
-      const updated = typeof newMessages === 'function' ? newMessages(prev) : newMessages;
-      
-      if (activeChatId) {
-        setChatHistory(h => h.map(session => 
-          session.id === activeChatId 
-            ? { ...session, messages: updated } 
-            : session
-        ));
-      } else if (updated.length > 0) {
-        // Create new session on first message if no active session
-        const newId = Date.now().toString();
-        const firstUserText = updated[0].parts.find(p => p.text)?.text || 'New Chat';
-        
-        const newSession: ChatSession = {
-          id: newId,
-          title: firstUserText.slice(0, 30) + (firstUserText.length > 30 ? '...' : ''), // Fallback title
-          messages: updated
-        };
-        setChatHistory(h => [newSession, ...h]);
-        setActiveChatId(newId);
-
-        // Trigger smart title generation in background
-        if (firstUserText) {
-          generateSmartTitle(newId, firstUserText);
-        }
-      }
-      
-      return updated;
+      return typeof newMessages === 'function' ? newMessages(prev) : newMessages;
     });
   };
 
@@ -129,10 +131,17 @@ const App: React.FC = () => {
     setChatHistory(h => h.map(c => c.id === id ? { ...c, title: newTitle } : c));
   };
 
+  const toggleSidebar = () => {
+    if (window.innerWidth >= 768) {
+      setIsDesktopSidebarOpen(!isDesktopSidebarOpen);
+    } else {
+      setIsSidebarOpen(!isSidebarOpen);
+    }
+  };
+
   const getHeaderTitle = () => {
     switch (mode) {
       case 'live': return 'Live Conversation';
-      case 'image': return 'Imagen 1';
       default: return currentChat?.title || 'New Chat';
     }
   };
@@ -149,29 +158,33 @@ const App: React.FC = () => {
 
       {/* Sidebar */}
       <div className={`
-        fixed md:static inset-y-0 left-0 z-50 w-72 bg-gray-50/90 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        fixed md:static inset-y-0 left-0 z-50 bg-gray-50/90 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out shadow-2xl md:shadow-none overflow-hidden
+        ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0 w-72'}
+        ${isDesktopSidebarOpen ? 'md:w-72' : 'md:w-0 md:border-none'}
       `}>
-        <Sidebar 
-          chatHistory={chatHistory}
-          activeChatId={activeChatId}
-          mode={mode}
-          onSetMode={(m) => { setMode(m); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
-          onSelectChat={(id) => { setActiveChatId(id); setMode('chat'); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
-          onNewChat={handleNewChat}
-          onDeleteChat={handleDeleteChat}
-          onRenameChat={handleRenameChat}
-        />
+        <div className="w-72 h-full">
+            <Sidebar 
+            chatHistory={chatHistory}
+            activeChatId={activeChatId}
+            mode={mode}
+            onSetMode={(m) => { setMode(m); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+            onSelectChat={(id) => { setActiveChatId(id); setMode('chat'); if(window.innerWidth < 768) setIsSidebarOpen(false); }}
+            onNewChat={handleNewChat}
+            onDeleteChat={handleDeleteChat}
+            onRenameChat={handleRenameChat}
+            />
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full relative w-full bg-white dark:bg-gray-950">
+      <div className="flex-1 flex flex-col h-full relative w-full bg-white dark:bg-gray-950 min-w-0">
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 z-30 transition-all duration-300">
+        <header className="h-16 flex items-center justify-between px-4 sm:px-6 z-30 transition-all duration-300 border-b border-transparent">
           <div className="flex items-center gap-3 overflow-hidden">
             <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden text-gray-600 dark:text-gray-400"
+              onClick={toggleSidebar}
+              className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
+              title={isDesktopSidebarOpen ? "Hide Dashboard" : "Show Dashboard"}
             >
               <MenuIcon className="w-5 h-5" />
             </button>
@@ -207,7 +220,6 @@ const App: React.FC = () => {
             />
           )}
           {mode === 'live' && <LiveView />}
-          {mode === 'image' && <ImageView />}
         </main>
       </div>
 
