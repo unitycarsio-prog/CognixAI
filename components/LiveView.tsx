@@ -227,7 +227,7 @@ export const LiveView: React.FC = () => {
                 responseModalities: [Modality.AUDIO],
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
-                systemInstruction: "You are Cognix AI. Be concise and professional. Do not use excessive markdown.",
+                systemInstruction: "You are Cognix AI. Be concise and professional. Do NOT use markdown syntax, bolding (**), or asterisks in your responses. Speak naturally.",
             },
         });
     }, [stopSession]);

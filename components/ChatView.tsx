@@ -21,7 +21,7 @@ const SuggestionCard: React.FC<{
 const TypingEffect: React.FC<{ text: string }> = ({ text }) => {
     const [displayedText, setDisplayedText] = useState('');
     useEffect(() => { setDisplayedText(text); }, [text]);
-    return <>{displayedText}<span className="blinking-cursor"></span></>;
+    return <span className="whitespace-pre-wrap">{displayedText}<span className="blinking-cursor"></span></span>;
 };
 
 interface ChatViewProps {
@@ -71,7 +71,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         }).filter(Boolean) as any[]
       })).filter(m => m.parts.length > 0);
       
-      const systemInstruction = "You are Cognix AI. Answer all questions fully, accurately, and helpfully. Provide comprehensive responses to everything the user asks.";
+      const systemInstruction = "You are Cognix AI. Answer all questions accurately. Keep responses concise and avoid unnecessary verbosity. Do NOT use markdown bolding (**) or asterisks in your responses. Use clean, plain text formatting with paragraphs.";
       
       // Attempt 1: Try with search tool
       let stream;
@@ -168,7 +168,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                                         <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="max-w-full" />
                                     </div>
                                 )}
-                                {part.text && (isLoading && idx===messages.length-1 && pIdx===msg.parts.length-1 ? <TypingEffect text={part.text}/> : <div className="markdown-body">{part.text}</div>)}
+                                {part.text && (isLoading && idx===messages.length-1 && pIdx===msg.parts.length-1 ? <TypingEffect text={part.text}/> : <div className="markdown-body whitespace-pre-wrap">{part.text}</div>)}
                                 {part.searchResults && part.searchResults.length > 0 && (
                                     <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10 flex flex-wrap gap-2">
                                         {part.searchResults.map((r, i) => (
