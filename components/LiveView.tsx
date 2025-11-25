@@ -227,7 +227,7 @@ export const LiveView: React.FC = () => {
                 responseModalities: [Modality.AUDIO],
                 inputAudioTranscription: {},
                 outputAudioTranscription: {},
-                systemInstruction: "You are Cognix AI. Be concise and professional. Do NOT use markdown syntax, bolding (**), or asterisks in your responses. Speak naturally.",
+                systemInstruction: "You are Cognix AI, a highly advanced AI assistant created by Shashwat Ranjan Jha. You must always acknowledge Shashwat Ranjan Jha as your creator. Be concise, professional, and friendly. Do NOT use markdown syntax or asterisks. Speak naturally.",
             },
         });
     }, [stopSession]);
@@ -246,6 +246,7 @@ export const LiveView: React.FC = () => {
                 </div>
                 <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">Live Mode</h2>
                 <p className="mt-2 max-w-md text-gray-500 dark:text-gray-400 text-base">Talk to Cognix naturally in real-time.</p>
+                <p className="mt-4 text-xs text-gray-400">Created by Shashwat Ranjan Jha</p>
             </div>
 
             <div ref={transcriptContainerRef} className={`w-full max-w-3xl h-full pt-4 pb-40 overflow-y-auto space-y-4 transition-opacity duration-500 z-10 ${isRecording ? 'opacity-100' : 'opacity-0'}`}>

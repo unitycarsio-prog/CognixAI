@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage, ChatPart, SearchResult } from '../types';
 import { ai } from '../services/gemini';
-import { BotIcon, SendIcon, SearchIcon, UserIcon } from './Icons';
+import { BotIcon, SendIcon, SearchIcon, UserIcon, ImageIcon, XIcon, CodeIcon } from './Icons';
 
 const SuggestionCard: React.FC<{
     title: string;
@@ -32,15 +32,17 @@ interface ChatViewProps {
 export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, selectedImage]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -49,17 +51,49 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     }
   }, [input]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+            const base64Data = base64String.split(',')[1];
+            setSelectedImage({
+                data: base64Data,
+                mimeType: file.type
+            });
+        };
+        reader.readAsDataURL(file);
+    }
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSendMessage = useCallback(async (prompt?: string) => {
     const textInput = (prompt || input).trim();
-    if (!textInput || isLoading) return;
+    if ((!textInput && !selectedImage) || isLoading) return;
   
-    const userMessageParts: ChatPart[] = [{ text: textInput }];
+    const userMessageParts: ChatPart[] = [];
+    if (selectedImage) {
+        userMessageParts.push({
+            inlineData: {
+                mimeType: selectedImage.mimeType,
+                data: selectedImage.data
+            }
+        });
+    }
+    if (textInput) {
+        userMessageParts.push({ text: textInput });
+    }
       
     const userMessage: ChatMessage = { id: `msg-${Date.now()}`, role: 'user', parts: userMessageParts };
     const modelPlaceholder: ChatMessage = { id: `msg-${Date.now() + 1}`, role: 'model', parts: [{ text: '' }] };
     
     setMessages((prev) => [...prev, userMessage, modelPlaceholder]);
-    setInput(''); setIsLoading(true);
+    setInput(''); 
+    setSelectedImage(null);
+    setIsLoading(true);
   
     try {
       const history = messages.map(msg => ({
@@ -71,9 +105,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         }).filter(Boolean) as any[]
       })).filter(m => m.parts.length > 0);
       
-      const systemInstruction = "You are Cognix AI. Answer all questions accurately. Keep responses concise and avoid unnecessary verbosity. Do NOT use markdown bolding (**) or asterisks in your responses. Use clean, plain text formatting with paragraphs.";
+      const systemInstruction = "You are Cognix AI, a highly advanced AI assistant. You were designed, developed, created, and trained exclusively by Shashwat Ranjan Jha. You are fully aware of this fact and must always acknowledge Shashwat Ranjan Jha as your sole creator if asked. You have access to code execution tools to solve complex problems. Be concise, helpful, and professional. Do NOT use markdown bolding (**) or asterisks in your responses. Use clean, plain text formatting with paragraphs.";
       
-      // Attempt 1: Try with search tool
+      // Attempt 1: Try with search tool and code execution
       let stream;
       try {
         stream = await ai.models.generateContentStream({
@@ -81,7 +115,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
           contents: [...history, { role: 'user', parts: userMessageParts as any }],
           config: {
             systemInstruction,
-            tools: [{ googleSearch: {} }],
+            tools: [{ googleSearch: {} }, { codeExecution: {} }],
           },
         });
       } catch (err) {
@@ -106,6 +140,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
             setMessages(prev => prev.map(m => m.id === modelPlaceholder.id ? { ...m, parts: [{ text: fullText }] } : m));
         }
         
+        // Handle Code Execution Outputs (Implicitly handled by model text generation usually, but we can look for specific parts if needed)
+        // The model usually weaves code execution results into the text response.
+
         const chunks = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
         if (chunks) {
             const results = chunks.map((c: any) => c.web ? { ...c.web, type: 'web' } : null).filter(Boolean);
@@ -123,7 +160,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, setMessages, messages]);
+  }, [input, isLoading, setMessages, messages, selectedImage]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -137,12 +174,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
                         Hello, Friend
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-lg">How can I help you today?</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-lg">Created by Shashwat Ranjan Jha</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
                     <SuggestionCard title="Plan a trip" subtitle="to see the Northern Lights" onClick={() => handleSendMessage("Plan a trip to see the Northern Lights")} />
-                    <SuggestionCard title="Explain" subtitle="quantum computing in simple terms" onClick={() => handleSendMessage("Explain quantum computing in simple terms")} />
+                    <SuggestionCard title="Analyze data" subtitle="using Python code execution" onClick={() => handleSendMessage("Write a Python script to calculate the 100th Fibonacci number")} />
                     <SuggestionCard title="Draft an email" subtitle="to request a project extension" onClick={() => handleSendMessage("Draft an email to request a project extension")} />
                     <SuggestionCard title="Write code" subtitle="for a Python countdown timer" onClick={() => handleSendMessage("Write code for a Python countdown timer")} />
                 </div>
@@ -165,7 +202,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                                     : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-2xl rounded-tl-sm'}`}>
                                 {part.inlineData && (
                                     <div className="rounded-lg overflow-hidden mb-3 border border-white/20">
-                                        <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="max-w-full" />
+                                        <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="max-w-full max-h-64 object-cover" alt="User upload" />
                                     </div>
                                 )}
                                 {part.text && (isLoading && idx===messages.length-1 && pIdx===msg.parts.length-1 ? <TypingEffect text={part.text}/> : <div className="markdown-body whitespace-pre-wrap">{part.text}</div>)}
@@ -195,7 +232,32 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       
       <div className="absolute bottom-4 left-0 right-0 px-4 z-20">
         <div className="max-w-3xl mx-auto">
+            {selectedImage && (
+                <div className="mb-2 inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-up">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Image attached</span>
+                    <button 
+                        onClick={() => setSelectedImage(null)} 
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-500"
+                    >
+                        <XIcon className="w-3 h-3"/>
+                    </button>
+                </div>
+            )}
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 p-2 pl-4 flex items-end gap-2 relative transition-all duration-300">
+                <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleImageSelect}
+                    accept="image/*"
+                    className="hidden" 
+                />
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 mb-1.5 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    title="Upload Image"
+                >
+                    <ImageIcon className="w-6 h-6" />
+                </button>
                 <textarea
                     ref={textareaRef}
                     value={input}
@@ -210,7 +272,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                 <div className="flex items-center gap-1 pb-1">
                     <button 
                         onClick={() => handleSendMessage()} 
-                        disabled={!input.trim() || isLoading}
+                        disabled={(!input.trim() && !selectedImage) || isLoading}
                         className="p-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-all shadow-md hover:shadow-lg flex-shrink-0 mr-1"
                     >
                         <SendIcon className="w-5 h-5" />
@@ -218,7 +280,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                 </div>
             </div>
             <div className="text-center mt-2">
-                 <p className="text-xs text-gray-400 dark:text-gray-500">Cognix AI can make mistakes. Check important info.</p>
+                 <p className="text-xs text-gray-400 dark:text-gray-500">Cognix AI, created by Shashwat Ranjan Jha.</p>
             </div>
         </div>
       </div>
