@@ -1,7 +1,9 @@
 {
-  "name": "Cognix AI",
-  "description": "Cognix AI, developed by Shashwat Ranjan Jha, is an advanced assistant featuring intelligent, text-based chat and real-time voice conversations, powered by Gemini.",
+  "name": "CognixAI V3.0 pro",
+  "description": "The ultimate intelligence engine. Private, collective, and state-of-the-art. Built by Shashwat Ranjan Jha.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "camera",
+    "geolocation"
   ]
 }
