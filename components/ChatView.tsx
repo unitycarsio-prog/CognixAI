@@ -21,9 +21,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
   const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
-  const [isCognateDropdownOpen, setIsCognateDropdownOpen] = useState(false);
   const [activeParticipants, setActiveParticipants] = useState<string[]>([]);
-  const [showInviteFeedback, setShowInviteFeedback] = useState(false);
+  const [showInviteToast, setShowInviteToast] = useState(false);
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,6 +44,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
     const userMessageParts: ChatPart[] = [];
     if (selectedImage) userMessageParts.push({ inlineData: { mimeType: selectedImage.mimeType, data: selectedImage.data } });
     
+    // Add participant context to the prompt if people are "joined"
     const participantPrefix = activeParticipants.length > 0 
         ? `[Cluster Sync: ${activeParticipants.map(id => friends.find(f => f.id === id)?.name).join(', ')}] ` 
         : '';
@@ -62,13 +62,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
   
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
       const isImageRequest = /generate (an )?image|create (an )?image|draw|paint/i.test(textInput);
-      const targetModel = isImageRequest ? 'gemini-2.5-flash-image' : (
-        model === 'ciorea-coding' || model === 'clora-workflow' || model === 'gemini-3-pro-preview' 
-        ? 'gemini-3-pro-preview' 
-        : 'gemini-3-flash-preview'
-      );
+      
+      // Route specific requested models to their Gemini counterparts
+      let targetModel: string = 'gemini-3-pro-preview';
+      if (isImageRequest) targetModel = 'gemini-2.5-flash-image';
+      else if (model === 'gemini-3-flash-preview') targetModel = 'gemini-3-flash-preview';
+      else if (model === 'gemini-flash-lite-latest' || model === 'cognix-v2') targetModel = 'gemini-flash-lite-latest';
+      else if (model === 'clora-n1' || model === 'corea-rv1') targetModel = 'gemini-3-pro-preview';
 
       const history = messages.map(msg => ({
         role: msg.role,
@@ -90,95 +91,108 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
 
       let responseParts: ChatPart[] = [];
       for (const part of response.candidates[0].content.parts) {
-        if (part.text) {
-          responseParts.push({ text: part.text });
-        } else if (part.inlineData) {
-          responseParts.push({ inlineData: { mimeType: part.inlineData.mimeType, data: part.inlineData.data } });
-        }
+        if (part.text) responseParts.push({ text: part.text });
+        else if (part.inlineData) responseParts.push({ inlineData: { mimeType: part.inlineData.mimeType, data: part.inlineData.data } });
       }
 
-      setMessages(prev => prev.map(m => m.id === modelPlaceholderId ? { 
-        ...m, 
-        parts: responseParts, 
-        isSearching: false 
-      } : m));
-
+      setMessages(prev => prev.map(m => m.id === modelPlaceholderId ? { ...m, parts: responseParts, isSearching: false } : m));
     } catch (error) {
-      setMessages(prev => prev.map(m => m.id === modelPlaceholderId ? { ...m, parts: [{ text: `Neural Uplink Error: Protocol synchronization failed. Please re-initialize.` }], isSearching: false } : m));
+      setMessages(prev => prev.map(m => m.id === modelPlaceholderId ? { ...m, parts: [{ text: `Neural Uplink Interrupted. Re-sync necessary for secure communication.` }], isSearching: false } : m));
     } finally {
       setIsLoading(false);
     }
   }, [input, isLoading, messages, selectedImage, systemInstruction, model, webSearchEnabled, setMessages, activeParticipants, friends]);
 
-  const toggleParticipant = (friendId: string) => {
-    if (activeParticipants.length >= 10 && !activeParticipants.includes(friendId)) return;
-    setActiveParticipants(prev => prev.includes(friendId) ? prev.filter(id => id !== friendId) : [...prev, friendId]);
+  const handleShareInvite = () => {
+    const dummyUrl = `${window.location.origin}/join/${Math.random().toString(36).substring(7)}`;
+    navigator.clipboard.writeText(dummyUrl);
+    setShowInviteToast(true);
+    setTimeout(() => setShowInviteToast(false), 3000);
+    
+    // Simulate someone joining for the sake of the requested UI feature
+    if (friends.length > 0 && activeParticipants.length < 5) {
+      const randomFriend = friends[Math.floor(Math.random() * friends.length)];
+      if (!activeParticipants.includes(randomFriend.id)) {
+        setTimeout(() => setActiveParticipants(prev => [...prev, randomFriend.id]), 1500);
+      }
+    }
   };
 
-  const modelOptions = [
-    { id: 'gemini-3-pro-preview', label: 'Gemini 3.0 Pro', desc: 'Superior Reasoning' },
-    { id: 'clora-workflow', label: 'Clora Engine', desc: 'Process Automation' },
-    { id: 'cognix-arc-1.0', label: 'Cognix Arc 1.0', desc: 'Baseline Logic' },
-    { id: 'gemini-3-flash-preview', label: 'Flash 3.0', desc: 'Instant Response' },
+  const modelOptions: {id: ModelType, label: string, desc: string}[] = [
+    { id: 'gemini-3-pro-preview', label: 'Gemini 3.0 Pro', desc: 'Superior SOTA Logic' },
+    { id: 'gemini-3-flash-preview', label: 'Gemini 3.0 Flash', desc: 'Instant Reasoning' },
+    { id: 'cognix-v2', label: 'CognixV2', desc: 'Optimized Workflow' },
+    { id: 'clora-n1', label: 'CloraN1', desc: 'System Operations' },
+    { id: 'corea-rv1', label: 'CoreaRv1', desc: 'Creative Intelligence' },
+    { id: 'gemini-flash-lite-latest', label: 'Flash Lite', desc: 'Maximum Efficiency' },
+    { id: 'gemini-2.5-flash-image', label: 'Neural Visualizer', desc: 'Creative Image Engine' }
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 relative">
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-12 pb-44 sm:pb-52 pt-8 custom-scrollbar scroll-smooth">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 relative overflow-hidden">
+      {/* Invite Toast */}
+      {showInviteToast && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-blue-600 text-white rounded-full text-xs font-bold uppercase tracking-widest shadow-2xl animate-fade-in-up">
+          Link copied! Node ready for sync.
+        </div>
+      )}
+
+      {/* Messages Scroll Area */}
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-10 md:px-24 lg:px-48 pb-56 pt-12 custom-scrollbar scroll-smooth">
         {messages.length === 0 ? (
-            <div className="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[70vh] text-center animate-fade-in py-10">
-                 <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-[2.5rem] flex items-center justify-center text-white shadow-[0_20px_60px_rgba(37,99,235,0.4)] mb-12 group transition-all hover:scale-110 duration-700 relative">
-                     <BotIcon className="w-14 h-14" />
-                     <div className="absolute -inset-2 bg-blue-400/20 blur-xl rounded-full animate-pulse-soft"></div>
+            <div className="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in relative">
+                 <div className="w-20 h-20 bg-blue-600 rounded-[1.8rem] flex items-center justify-center text-white shadow-xl mb-10 transition-transform hover:scale-105 duration-500">
+                     <BotIcon className="w-12 h-12" />
                  </div>
-                 <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">CognixAI V3.0 Pro</h2>
-                 <p className="text-slate-400 dark:text-slate-500 mb-14 max-w-md font-medium leading-relaxed px-4">
-                    Neural initialization complete. Ask anything to access the state-of-the-art intelligence core.
+
+                 <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">
+                   CognixAI <span className="text-blue-600">V3.0 Pro</span>
+                 </h2>
+                 <p className="text-slate-400 dark:text-slate-500 mb-12 max-w-sm font-medium leading-relaxed">
+                   Neural initialization complete. Ask anything to access the state-of-the-art intelligence core.
                  </p>
                  
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full px-4">
                      {[
-                        { t: "Creative Vision", q: "Help me visualize a creative concept for a sustainable smart city." },
-                        { t: "System Architect", q: "Architect a complex logic flow for a fintech processing node." },
-                        { t: "Deep Search", q: "Analyze the current global shift in decentralized computing." },
-                        { t: "Logic Engine", q: "Refactor this TypeScript algorithm for maximum neural efficiency." }
+                        { t: "Creative Architecture", q: "Architect a futuristic, sustainable headquarters in 3D." },
+                        { t: "Process Logic", q: "Create a workflow for a high-frequency trading algorithm." }
                      ].map((item, i) => (
-                        <button key={i} onClick={() => handleSendMessage(item.q)} className="text-left p-5 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:border-blue-500 hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-all bg-white dark:bg-slate-900 shadow-sm group">
-                            <span className="font-black text-slate-800 dark:text-white text-xs sm:text-sm block mb-1 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{item.t}</span>
-                            <span className="text-[10px] sm:text-xs text-slate-400 font-medium italic line-clamp-1 opacity-70">{item.q}</span>
+                        <button key={i} onClick={() => handleSendMessage(item.q)} className="text-left p-6 rounded-3xl border border-slate-100 dark:border-slate-800 hover:border-blue-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all bg-white dark:bg-slate-900 shadow-sm group">
+                            <span className="font-bold text-slate-800 dark:text-white text-xs block mb-1 uppercase tracking-tight group-hover:text-blue-600 transition-colors">{item.t}</span>
+                            <span className="text-[10px] text-slate-400 font-medium italic opacity-70 line-clamp-1">{item.q}</span>
                         </button>
                      ))}
                  </div>
             </div>
         ) : (
-            <div className="max-w-4xl mx-auto space-y-10 pb-12">
+            <div className="max-w-3xl mx-auto space-y-12 pb-16">
                 {messages.map((msg) => (
-                    <div key={msg.id} className={`flex gap-4 sm:gap-6 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-fade-in-up`}>
-                        <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-2xl flex items-center justify-center shadow-md transition-all duration-300
-                            ${msg.role === 'user' ? 'bg-slate-50 dark:bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.25)]'}
+                    <div key={msg.id} className={`flex gap-6 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} animate-fade-in-up`}>
+                        <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-300
+                            ${msg.role === 'user' ? 'bg-slate-50 dark:bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-blue-500/10'}
                         `}>
-                             {msg.role === 'user' ? <UserIcon className="w-5 h-5 sm:w-6 sm:h-6"/> : <BotIcon className="w-7 h-7 sm:w-8 sm:h-8"/>}
+                             {msg.role === 'user' ? <UserIcon className="w-5 h-5"/> : <BotIcon className="w-6 h-6"/>}
                         </div>
-                        <div className={`flex flex-col gap-3 max-w-[88%] sm:max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                        <div className={`flex flex-col gap-3 max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                              {msg.parts.map((part, i) => (
-                                 <div key={i} className={`p-5 sm:p-6 rounded-[1.8rem] sm:rounded-[2.2rem] text-sm sm:text-base leading-relaxed shadow-sm border transition-all duration-500 ${msg.role === 'user' ? 'bg-blue-600 text-white border-blue-600 rounded-tr-none font-medium' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-100 dark:border-slate-700 rounded-tl-none'}`}>
+                                 <div key={i} className={`p-6 rounded-[2rem] text-sm sm:text-base leading-relaxed border transition-all duration-500 ${msg.role === 'user' ? 'bg-blue-600 text-white border-blue-600 rounded-tr-none font-medium' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700 rounded-tl-none'}`}>
                                      {part.inlineData && (
-                                       <div className="mb-4 sm:mb-5 group relative overflow-hidden rounded-2xl shadow-xl border border-white/10">
-                                          <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="max-h-[500px] w-full object-contain transition-transform duration-700 group-hover:scale-105 bg-slate-100 dark:bg-slate-900" alt="Generated Node"/>
-                                          <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[9px] font-black uppercase text-white tracking-widest">Cognix V3.0 RENDER</div>
+                                       <div className="mb-6 group relative overflow-hidden rounded-3xl shadow-2xl border border-white/10">
+                                          <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="max-h-[500px] w-full object-contain transition-transform duration-700 group-hover:scale-105 bg-slate-900" alt="Generated Output"/>
+                                          <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[9px] font-black uppercase text-white tracking-widest border border-white/10">Render v3.0</div>
                                        </div>
                                      )}
-                                     <div className="whitespace-pre-wrap prose prose-sm sm:prose-base dark:prose-invert max-w-none font-medium tracking-tight text-slate-700 dark:text-slate-200">{part.text}</div>
+                                     <div className="whitespace-pre-wrap prose prose-sm sm:prose-base dark:prose-invert max-w-none font-medium tracking-tight selection:bg-blue-300 dark:selection:bg-blue-700">{part.text}</div>
                                  </div>
                              ))}
                         </div>
                     </div>
                 ))}
                 {isLoading && (
-                  <div className="flex gap-4 sm:gap-6 items-center animate-pulse">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg"><BotIcon className="w-7 h-7 sm:w-8 sm:h-8"/></div>
-                    <div className="bg-slate-50 dark:bg-slate-800 px-5 py-3 rounded-2xl text-[9px] sm:text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] shadow-sm flex items-center gap-3">
-                       Processing
+                  <div className="flex gap-6 items-center animate-pulse">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white"><BotIcon className="w-6 h-6"/></div>
+                    <div className="bg-slate-50 dark:bg-slate-800 px-6 py-3 rounded-2xl text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] flex items-center gap-3">
+                       Thinking
                        <div className="flex gap-1">
                           <span className="w-1 h-1 bg-blue-600 rounded-full animate-bounce"></span>
                           <span className="w-1 h-1 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
@@ -191,19 +205,21 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 pb-6 sm:pb-12 pt-16 bg-gradient-to-t from-white dark:from-slate-900 via-white/95 dark:via-slate-900/95 to-transparent pointer-events-none z-40">
-          <div className="max-w-3xl mx-auto pointer-events-auto">
-              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-[2.2rem] sm:rounded-[2.8rem] shadow-[0_30px_70px_rgba(0,0,0,0.18)] border border-slate-200/60 dark:border-slate-700/50 overflow-visible transition-all duration-500 focus-within:shadow-[0_40px_100px_rgba(37,99,235,0.2)] focus-within:border-blue-500/50 group">
-                   <div className="flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-3.5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/40 dark:bg-slate-900/30 overflow-x-auto no-scrollbar whitespace-nowrap">
+      {/* Minimal Uplink Input Bar */}
+      <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-12 pb-10 pt-20 bg-gradient-to-t from-white dark:from-slate-900 via-white/95 dark:via-slate-900/95 to-transparent pointer-events-none z-40">
+          <div className="max-w-4xl mx-auto pointer-events-auto">
+              <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.12)] border border-slate-200/50 dark:border-slate-700/50 overflow-visible transition-all duration-500 focus-within:shadow-[0_30px_80px_rgba(37,99,235,0.15)] group/input">
+                   {/* Contextual Toolbar */}
+                   <div className="flex items-center gap-2 px-8 sm:px-12 py-3 border-b border-slate-100 dark:border-slate-700/30 bg-slate-50/20 dark:bg-slate-900/20">
                        <div className="relative shrink-0">
-                            <button onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)} className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-all">
-                                {modelOptions.find(o => o.id === model)?.label}
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3.5"><path d="M19 9l-7 7-7-7"/></svg>
+                            <button onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 flex items-center gap-2 transition-all">
+                                {modelOptions.find(o => o.id === model)?.label || 'Model'}
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7"/></svg>
                             </button>
                             {isModelDropdownOpen && (
-                                <div className="absolute bottom-full left-0 mb-4 w-52 bg-white dark:bg-slate-800 rounded-[1.8rem] shadow-2xl border border-slate-100 dark:border-slate-700 z-50 p-2 animate-fade-in-up">
+                                <div className="absolute bottom-full left-0 mb-4 w-56 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 p-2 animate-fade-in-up">
                                     {modelOptions.map(m => (
-                                        <button key={m.id} onClick={() => { setActiveModel(m.id as any); setIsModelDropdownOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl text-[10px] font-black transition-all ${model === m.id ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-slate-500'}`}>
+                                        <button key={m.id} onClick={() => { setActiveModel(m.id); setIsModelDropdownOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl text-[10px] font-black transition-all ${model === m.id ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-500 dark:text-slate-400'}`}>
                                             <div className="flex flex-col">
                                               <span>{m.label}</span>
                                               <span className="text-[8px] opacity-40 uppercase tracking-widest mt-0.5">{m.desc}</span>
@@ -214,42 +230,41 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
                             )}
                        </div>
                        
-                       <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-2 sm:mx-4 opacity-50 shrink-0"></div>
+                       <div className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-4 opacity-50 shrink-0"></div>
                        
-                       <button onClick={() => setWebSearchEnabled(!webSearchEnabled)} className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shrink-0 ${webSearchEnabled ? 'text-blue-600' : 'text-slate-400'}`}>
-                           <div className={`w-2 h-2 rounded-full ${webSearchEnabled ? 'bg-blue-600 shadow-[0_0_12px_#2563EB]' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                       <button onClick={() => setWebSearchEnabled(!webSearchEnabled)} className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shrink-0 ${webSearchEnabled ? 'text-blue-600' : 'text-slate-400'}`}>
+                           <div className={`w-1.5 h-1.5 rounded-full ${webSearchEnabled ? 'bg-blue-600 shadow-[0_0_10px_#2563EB]' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
                            Neural Search
                        </button>
 
-                       <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-2 sm:mx-4 opacity-50 shrink-0"></div>
+                       <div className="h-3 w-px bg-slate-200 dark:bg-slate-800 mx-4 opacity-50 shrink-0"></div>
 
-                       <div className="relative shrink-0">
-                           <button onClick={() => setIsCognateDropdownOpen(!isCognateDropdownOpen)} className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeParticipants.length > 0 ? 'text-blue-600' : 'text-slate-400'}`}>
-                               <UsersIcon className="w-4 h-4" />
-                               {activeParticipants.length > 0 ? `${activeParticipants.length} Links` : 'Sync Node'}
+                       {/* Invite People via Link functionality */}
+                       <div className="flex items-center gap-4">
+                           <button onClick={handleShareInvite} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 flex items-center gap-2.5 transition-all shrink-0">
+                               <CopyIcon className="w-3.5 h-3.5" />
+                               Invite People
                            </button>
-                           {isCognateDropdownOpen && (
-                               <div className="absolute bottom-full left-0 mb-4 w-56 bg-white dark:bg-slate-800 rounded-[1.8rem] shadow-2xl border border-slate-100 dark:border-slate-700 z-50 p-2 animate-fade-in-up">
-                                   <div className="px-4 py-3 border-b border-slate-50 dark:border-slate-700 mb-2">
-                                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Node Participants</span>
-                                   </div>
-                                   <div className="max-h-52 overflow-y-auto custom-scrollbar px-1">
-                                       {friends.map(f => (
-                                           <button key={f.id} onClick={() => toggleParticipant(f.id)} className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-[10px] font-black transition-all ${activeParticipants.includes(f.id) ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50'}`}>
-                                               <span>{f.name}</span>
-                                               {activeParticipants.includes(f.id) && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></div>}
-                                           </button>
-                                       ))}
-                                       {friends.length === 0 && <p className="text-[10px] text-slate-400 italic px-4 py-2">No nodes synced.</p>}
-                                   </div>
+
+                           {activeParticipants.length > 0 && (
+                               <div className="flex -space-x-2 ml-2 transition-all animate-fade-in">
+                                   {activeParticipants.map(id => {
+                                       const f = friends.find(friend => friend.id === id);
+                                       return (
+                                           <div key={id} className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-800 bg-blue-600 flex items-center justify-center text-[8px] font-black text-white uppercase shadow-sm" title={f?.name}>
+                                               {f?.name?.[0]}
+                                           </div>
+                                       );
+                                   })}
                                </div>
                            )}
                        </div>
                    </div>
 
-                   <div className="p-4 sm:p-5 flex items-end gap-3 sm:gap-5 px-5 sm:px-8 pb-5 sm:pb-8">
-                        <button onClick={() => fileInputRef.current?.click()} className="p-3 sm:p-4 rounded-[1.2rem] sm:rounded-3xl bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 transition-all shadow-inner active:scale-90 shrink-0 group/uplink">
-                            <ImageIcon className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover/uplink:-translate-y-0.5"/>
+                   {/* Main Input Area */}
+                   <div className="p-4 sm:p-5 flex items-end gap-3 sm:gap-4 px-6 sm:px-10 pb-5 sm:pb-8">
+                        <button onClick={() => fileInputRef.current?.click()} className="p-4 rounded-[1.4rem] bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-800 transition-all shadow-inner shrink-0 group/clip border border-transparent hover:border-blue-100">
+                            <ImageIcon className="w-6 h-6 transition-transform group-hover/clip:-translate-y-0.5"/>
                             <input type="file" ref={fileInputRef} onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -259,25 +274,29 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, theme
                                 }
                             }} accept="image/*" className="hidden" />
                         </button>
+                        
                         <textarea ref={textareaRef} value={input} onChange={e => setInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
                             placeholder="Ask Cognix anything..."
-                            className="flex-1 bg-transparent border-none outline-none resize-none py-3 sm:py-4 text-base sm:text-lg text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 max-h-40 min-h-[48px] font-semibold tracking-tight"
+                            className="flex-1 bg-transparent border-none outline-none resize-none py-3 text-base sm:text-lg text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 font-semibold tracking-tight max-h-40 min-h-[48px]"
                             rows={1} />
-                        <button onClick={() => handleSendMessage()} disabled={isLoading || (!input && !selectedImage)} className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 text-white rounded-[1.2rem] sm:rounded-[1.8rem] shadow-[0_15px_30px_rgba(37,99,235,0.45)] disabled:opacity-20 disabled:shadow-none active:scale-90 transition-all flex items-center justify-center shrink-0 hover:bg-blue-700 hover:-translate-y-1 relative overflow-hidden group/send">
-                             <SendIcon className="w-7 h-7 sm:w-9 sm:h-9 relative z-10 transition-transform group-hover/send:translate-x-0.5 group-hover/send:-translate-y-0.5"/>
-                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/send:translate-y-0 transition-transform duration-300"></div>
+                            
+                        <button onClick={() => handleSendMessage()} disabled={isLoading || (!input && !selectedImage)} className="w-14 h-14 bg-blue-600 text-white rounded-[1.4rem] shadow-[0_15px_30px_rgba(37,99,235,0.3)] disabled:opacity-20 disabled:shadow-none active:scale-90 transition-all flex items-center justify-center shrink-0 hover:bg-blue-700 hover:-translate-y-0.5 relative group/send">
+                             <SendIcon className="w-8 h-8 relative z-10 transition-transform group-hover/send:translate-x-0.5 group-hover/send:-translate-y-0.5"/>
+                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/send:opacity-100 transition-opacity rounded-[1.4rem]"></div>
                         </button>
                    </div>
+
+                   {/* Attachment Preview */}
                    {selectedImage && (
-                      <div className="px-6 sm:px-10 pb-5 sm:pb-6 flex items-center gap-4 animate-fade-in-up">
-                          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-blue-600 group/img">
-                              <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-full h-full object-cover" alt="Selected Node"/>
-                              <button onClick={() => setSelectedImage(null)} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-black text-sm opacity-0 group-hover/img:opacity-100 transition-all">✕</button>
+                      <div className="px-10 pb-6 flex items-center gap-4 animate-fade-in-up">
+                          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-xl border-2 border-blue-600 group/img">
+                              <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-full h-full object-cover" alt="Node Sync"/>
+                              <button onClick={() => setSelectedImage(null)} className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-black text-sm opacity-0 group-hover/img:opacity-100 transition-all">✕</button>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Protocol Handshake Synced</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{selectedImage.mimeType.split('/')[1]} stream active</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">Visual Sync Ready</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{selectedImage.mimeType.split('/')[1]} stream</span>
                           </div>
                       </div>
                    )}

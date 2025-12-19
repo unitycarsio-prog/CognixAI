@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Cognix AI | Shashwat Ranjan Jha</title>
+    <title>Cognix AI | V3.0 Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -17,39 +17,45 @@
             colors: {
               cognix: {
                 blue: '#2563EB',
-                cyan: '#06B6D4',
+                cyan: '#0EA5E9',
                 dark: '#0F172A',
+                accent: '#3B82F6',
               }
             },
             animation: {
-              'pulse-soft': 'pulseSoft 2s infinite',
+              'pulse-soft': 'pulseSoft 3s infinite',
               'float': 'float 6s ease-in-out infinite',
-              'fade-in': 'fadeIn 0.5s ease-out forwards',
-              'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+              'fade-in': 'fadeIn 0.4s ease-out forwards',
+              'fade-in-up': 'fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'glow': 'glow 2s ease-in-out infinite alternate',
             },
             keyframes: {
               pulseSoft: {
-                '0%, 100%': { opacity: '1' },
-                '50%': { opacity: '0.6' },
+                '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                '50%': { opacity: '0.8', transform: 'scale(1.02)' },
               },
               float: {
                 '0%, 100%': { transform: 'translateY(0px)' },
-                '50%': { transform: 'translateY(-10px)' },
+                '50%': { transform: 'translateY(-15px)' },
               },
               fadeIn: {
                 '0%': { opacity: '0' },
                 '100%': { opacity: '1' },
               },
               fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(15px)' },
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              glow: {
+                'from': { 'box-shadow': '0 0 5px #3b82f6, 0 0 10px #3b82f6' },
+                'to': { 'box-shadow': '0 0 20px #2563eb, 0 0 30px #2563eb' }
               }
             }
           }
         }
       }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
@@ -58,17 +64,34 @@
       
       body { -webkit-tap-highlight-color: transparent; }
       
-      .glass {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+      .mesh-bg {
+        background-color: #ffffff;
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%), 
+          radial-gradient(at 50% 0%, hsla(187, 91%, 60%, 0.1) 0, transparent 50%), 
+          radial-gradient(at 100% 0%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%);
       }
-      .dark .glass {
-        background: rgba(15, 23, 42, 0.7);
+      .dark .mesh-bg {
+        background-color: #020617;
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(217, 91%, 60%, 0.15) 0, transparent 50%), 
+          radial-gradient(at 50% 100%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%),
+          radial-gradient(at 100% 0%, hsla(217, 91%, 60%, 0.15) 0, transparent 50%);
       }
-      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.3); border-radius: 999px; }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(75, 85, 99, 0.3); }
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      .dark .glass-card {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     <script type="importmap">
 {
@@ -83,8 +106,8 @@
 }
 </script>
   </head>
-  <body class="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-100 dark:selection:bg-blue-900/40 overflow-hidden">
-    <div id="root"></div>
+  <body class="mesh-bg text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-100 dark:selection:bg-blue-900/40 overflow-hidden h-[100dvh]">
+    <div id="root" class="h-full"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

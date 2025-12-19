@@ -3,11 +3,14 @@ export type UIStyle = 'modern' | 'glass' | 'brutal' | 'retro';
 export type AccentColor = 'blue' | 'violet' | 'emerald' | 'rose' | 'amber';
 export type FontSize = 'small' | 'normal' | 'large';
 export type ModelType = 
-  | 'cognix-arc-1.0'
-  | 'gemini-3-flash-preview' 
   | 'gemini-3-pro-preview' 
-  | 'ciorea-coding'
-  | 'clora-workflow';
+  | 'gemini-3-flash-preview'
+  | 'gemini-flash-lite-latest'
+  | 'gemini-2.5-flash-image'
+  | 'clora-n1'
+  | 'corea-rv1'
+  | 'cognix-v2'
+  | 'ciorea-coding';
 
 export interface Friend {
   id: string;
