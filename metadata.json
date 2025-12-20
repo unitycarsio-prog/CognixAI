@@ -1,6 +1,6 @@
 {
-  "name": "CognixAI V3.0 pro",
-  "description": "The ultimate intelligence engine. Private, collective, and state-of-the-art. Built by Shashwat Ranjan Jha.",
+  "name": "CognixAI",
+  "description": "Your sleek, private intelligence companion. Built with high-performance Gemini integration.",
   "requestFramePermissions": [
     "microphone",
     "camera",

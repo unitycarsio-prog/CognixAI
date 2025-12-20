@@ -31,7 +31,7 @@ async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: 
     return buffer;
 }
 
-export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
+export const LiveView: React.FC<{ theme?: ThemeColors }> = () => {
     const [status, setStatus] = useState<'idle' | 'connecting' | 'active'>('idle');
     const [isCameraOn, setIsCameraOn] = useState(false);
     const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -59,8 +59,10 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
         streamRef.current?.getTracks().forEach(track => track.stop());
         streamRef.current = null;
         if (videoRef.current) videoRef.current.srcObject = null;
+        
         if (inputAudioContextRef.current?.state !== 'closed') await inputAudioContextRef.current?.close();
         if (outputAudioContextRef.current?.state !== 'closed') await outputAudioContextRef.current?.close();
+        
         outputSourcesRef.current.forEach(source => { try { source.stop(); } catch(e) {} });
         outputSourcesRef.current.clear();
     }, []);
@@ -68,8 +70,12 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
     const startSession = useCallback(async () => {
         setStatus('connecting');
         try {
+            const apiKey = process.env.API_KEY;
+            if (!apiKey) throw new Error("API Key missing");
+
             const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
             const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+            
             if (inputCtx.state === 'suspended') await inputCtx.resume();
             if (outputCtx.state === 'suspended') await outputCtx.resume();
 
@@ -80,7 +86,7 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
             outputNodeRef.current = outputNode;
             nextStartTimeRef.current = 0;
 
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const ai = new GoogleGenAI({ apiKey });
             sessionPromiseRef.current = ai.live.connect({
                 model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 callbacks: {
@@ -100,6 +106,7 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
                                 const int16 = new Int16Array(l);
                                 const data = e.inputBuffer.getChannelData(0);
                                 for (let i = 0; i < l; i++) { int16[i] = data[i] * 32768; }
+                                
                                 sessionPromiseRef.current?.then((session: any) => {
                                     session.sendRealtimeInput({ media: { data: encode(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' } });
                                 });
@@ -107,9 +114,21 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
                             mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
                             scriptProcessorRef.current.connect(inputAudioContextRef.current!.destination);
                             setStatus('active');
-                        } catch (err) { stopSession(); }
+                        } catch (err) { 
+                            console.error(err);
+                            stopSession(); 
+                        }
                     },
                     onmessage: async (message: LiveServerMessage) => {
+                        const interrupted = message.serverContent?.interrupted;
+                        if (interrupted) {
+                            for (const source of outputSourcesRef.current.values()) {
+                                try { source.stop(); } catch(e) {}
+                                outputSourcesRef.current.delete(source);
+                            }
+                            nextStartTimeRef.current = 0;
+                        }
+
                         const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
                         if (base64Audio && outputAudioContextRef.current) {
                             nextStartTimeRef.current = Math.max(nextStartTimeRef.current, outputAudioContextRef.current.currentTime);
@@ -117,20 +136,31 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
                             const source = outputAudioContextRef.current.createBufferSource();
                             source.buffer = buffer;
                             source.connect(outputNodeRef.current!);
+                            
+                            source.addEventListener('ended', () => {
+                                outputSourcesRef.current.delete(source);
+                            });
+
                             source.start(nextStartTimeRef.current);
                             nextStartTimeRef.current += buffer.duration;
                             outputSourcesRef.current.add(source);
                         }
                     },
-                    onerror: () => stopSession(),
+                    onerror: (e) => {
+                      console.error("Live session error", e);
+                      stopSession();
+                    },
                     onclose: () => setStatus('idle'),
                 },
                 config: {
                     responseModalities: [Modality.AUDIO],
-                    systemInstruction: "You are Cognix Live. Be helpful and professional in voice chat.",
+                    systemInstruction: "You are Clora Live. Be helpful, professional, and warm in voice chat.",
                 },
             });
-        } catch (e) { setStatus('idle'); }
+        } catch (e) { 
+            console.error(e);
+            setStatus('idle'); 
+        }
     }, [stopSession, isCameraOn, facingMode]);
 
     return (
@@ -142,29 +172,29 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = ({ theme }) => {
             )}
             
             <div className="z-10 text-center max-w-md">
-                <div className="w-24 h-24 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-2xl mx-auto mb-8 animate-pulse">
+                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center text-white shadow-2xl mx-auto mb-10 transition-all ${status === 'active' ? 'bg-red-600 animate-pulse scale-110' : 'bg-blue-600'}`}>
                     <MicrophoneIcon className="w-12 h-12" />
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Cognix LiveTalk</h2>
-                <p className="text-slate-500 mb-12">Experience real-time multimodal intelligence.</p>
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tighter italic uppercase">Talk to Clora</h2>
+                <p className="text-slate-500 mb-14 font-medium px-4">Experience instant, natural voice interaction with our core neural engine.</p>
                 
-                <div className="flex gap-4 justify-center">
-                    <button onClick={() => setIsCameraOn(!isCameraOn)} className={`p-4 rounded-2xl transition-all shadow-md ${isCameraOn ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500'}`}>
+                <div className="flex gap-5 justify-center">
+                    <button onClick={() => setIsCameraOn(!isCameraOn)} className={`p-5 rounded-3xl transition-all shadow-md active:scale-95 ${isCameraOn ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-400'}`}>
                         <CameraIcon className="w-6 h-6" />
                     </button>
                     {isCameraOn && (
-                        <button onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')} className="p-4 rounded-2xl bg-white dark:bg-slate-800 text-slate-500 shadow-md">
+                        <button onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')} className="p-5 rounded-3xl bg-white dark:bg-slate-800 text-slate-400 shadow-md active:scale-95">
                             <FlipCameraIcon className="w-6 h-6" />
                         </button>
                     )}
-                    <button onClick={() => status === 'active' ? stopSession() : startSession()} className={`p-6 rounded-2xl transition-all shadow-xl active:scale-95 ${status === 'active' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
-                        {status === 'active' ? <StopIcon className="w-8 h-8" /> : <MicrophoneIcon className="w-8 h-8" />}
+                    <button onClick={() => status === 'active' ? stopSession() : startSession()} className={`p-8 rounded-3xl transition-all shadow-2xl active:scale-90 ${status === 'active' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
+                        {status === 'active' ? <StopIcon className="w-10 h-10" /> : <MicrophoneIcon className="w-10 h-10" />}
                     </button>
                 </div>
                 
-                <div className="mt-8">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
-                       Status: {status}
+                <div className="mt-12">
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-6 py-3 bg-slate-100 dark:bg-slate-800/60 rounded-full border border-slate-200 dark:border-slate-800">
+                       Uplink Status: {status.toUpperCase()}
                    </span>
                 </div>
             </div>

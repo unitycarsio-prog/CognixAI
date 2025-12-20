@@ -1,16 +1,12 @@
-export type Mode = 'chat' | 'live' | 'friends' | 'toolbox' | 'memory' | 'community' | 'coding' | 'about';
+export type Mode = 'chat' | 'live' | 'toolbox' | 'community';
 export type UIStyle = 'modern' | 'glass' | 'brutal' | 'retro';
 export type AccentColor = 'blue' | 'violet' | 'emerald' | 'rose' | 'amber';
 export type FontSize = 'small' | 'normal' | 'large';
 export type ModelType = 
-  | 'gemini-3-pro-preview' 
-  | 'gemini-3-flash-preview'
-  | 'gemini-flash-lite-latest'
-  | 'gemini-2.5-flash-image'
-  | 'clora-n1'
-  | 'corea-rv1'
-  | 'cognix-v2'
-  | 'ciorea-coding';
+  | 'gemini-3-pro-preview'      // CognixV2 / CoreaRv1
+  | 'gemini-3-flash-preview'    // Gemini 3.0 Flash / CloraN1
+  | 'gemini-flash-lite-latest'  // Flash Lite
+  | 'gemini-2.5-flash-image';   // Neural Visualizer
 
 export interface Friend {
   id: string;
@@ -76,5 +72,5 @@ export interface ChatSession {
   id:string;
   title: string;
   messages: ChatMessage[];
-  participants?: string[]; // IDs of friends in this chat
+  participants: string[]; 
 }
