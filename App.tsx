@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeModel, setActiveModel] = useState<ModelType>('gemini-3-pro-preview');
   const [systemInstruction, setSystemInstruction] = useState("Hey! I'm Cognix, your elite AI companion by Shashwat Ranjan Jha. I provide high-fidelity intelligence focusing on precise reasoning, creative content, and architectural coding.");
+  const [deploymentHtml, setDeploymentHtml] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
@@ -49,8 +50,9 @@ const App: React.FC = () => {
       document.documentElement.classList.add('dark');
     }
 
-    // Handle session sharing link on load
     const params = new URLSearchParams(window.location.search);
+    
+    // Handle Shared Sessions
     const handshake = params.get('handshake');
     if (handshake) {
       try {
@@ -64,8 +66,21 @@ const App: React.FC = () => {
         };
         setChatHistory(prev => [sharedChat, ...prev]);
         setActiveChatId(newId);
-        window.history.replaceState({}, document.title, window.location.pathname);
       } catch (e) { console.error("Invalid handshake", e); }
+    }
+
+    // Handle Deployed UI Assets
+    const deployment = params.get('deployment');
+    if (deployment) {
+      try {
+        const decoded = decodeURIComponent(escape(atob(deployment)));
+        setDeploymentHtml(decoded);
+      } catch (e) { console.error("Deployment corrupt", e); }
+    }
+
+    // Clean URL
+    if (handshake || deployment) {
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -117,6 +132,15 @@ const App: React.FC = () => {
 
   return (
     <div className="h-full w-full flex bg-white dark:bg-slate-950 transition-colors duration-300 overflow-hidden font-sans">
+      {deploymentHtml ? (
+        <div className="fixed inset-0 z-[1000] bg-white dark:bg-black">
+          <div className="absolute top-4 right-4 z-[1001]">
+            <button onClick={() => setDeploymentHtml(null)} className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold text-xs uppercase">Close Preview</button>
+          </div>
+          <iframe srcDoc={deploymentHtml} className="w-full h-full border-none" />
+        </div>
+      ) : null}
+
       <Sidebar 
         chatHistory={chatHistory} 
         activeChatId={activeChatId} 

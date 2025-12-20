@@ -31,10 +31,11 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
             let targetModel = model;
 
             if (activeTool === 'dev') {
-                logActivity("Initializing Architecture...");
-                setTimeout(() => logActivity("Drafting Document Structure..."), 1500);
-                setTimeout(() => logActivity("Injecting Tailwind Configuration..."), 3000);
-                setTimeout(() => logActivity("Synthesizing Component Logic..."), 5000);
+                logActivity("Initializing Neural Architecture...");
+                setTimeout(() => logActivity("Analyzing UI Requirements..."), 1000);
+                setTimeout(() => logActivity("Drafting Component Hierarchy..."), 2000);
+                setTimeout(() => logActivity("Injecting Tailwind Stylings..."), 3500);
+                setTimeout(() => logActivity("Optimizing Responsive Layout..."), 5000);
             }
 
             switch(activeTool) {
@@ -55,7 +56,7 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                 contents: [{ parts }],
             });
             
-            if (activeTool === 'dev') logActivity("Finalizing Assembly...");
+            if (activeTool === 'dev') logActivity("Synthesis Complete. Assembler Finalized.");
             setResult(response.text || '');
         } catch (e) {
             setResult('Uplink failed. Try again.');
@@ -66,9 +67,11 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
 
     const handlePublish = () => {
         if (!result) return;
-        const b64 = btoa(unescape(encodeURIComponent(result)));
-        const url = `${window.location.origin}${window.location.pathname}?deployment=${b64}`;
-        setPublishedUrl(url);
+        try {
+            const b64 = btoa(unescape(encodeURIComponent(result)));
+            const url = `${window.location.origin}${window.location.pathname}?deployment=${b64}`;
+            setPublishedUrl(url);
+        } catch(e) { console.error("Publish failed", e); }
     };
 
     const tools = [
@@ -84,7 +87,7 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
             <div className="h-full bg-white dark:bg-[#020617] flex flex-col animate-fade-in overflow-hidden">
                 <header className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setActiveTool('summarizer')} className="text-xs font-bold text-slate-500 hover:text-black dark:hover:text-white uppercase tracking-widest">← Back to Lab</button>
+                        <button onClick={() => setActiveTool('summarizer')} className="text-xs font-bold text-slate-500 hover:text-black dark:hover:text-white uppercase tracking-widest transition-colors">← Back to Lab</button>
                         <h2 className="text-sm font-bold tracking-tight uppercase px-3 py-1 bg-black text-white dark:bg-white dark:text-black rounded-lg">Dev Studio Node</h2>
                     </div>
                     {result && (
@@ -101,15 +104,15 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Describe your UI vision..."
-                            className="flex-1 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium outline-none resize-none"
+                            className="flex-1 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium outline-none resize-none focus:border-black dark:focus:border-white transition-all"
                         />
                         
                         {loading && devLogs.length > 0 && (
-                            <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                                 <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Activity Feed</p>
                                 <div className="space-y-1">
                                     {devLogs.map((log, i) => (
-                                        <p key={i} className={`text-[10px] font-mono ${i === devLogs.length - 1 ? 'text-blue-500 font-bold' : 'text-slate-500'}`}>{`> ${log}`}</p>
+                                        <p key={i} className={`text-[10px] font-mono ${i === devLogs.length - 1 ? 'text-blue-500 font-bold' : 'text-slate-500 opacity-60'}`}>{`> ${log}`}</p>
                                     ))}
                                 </div>
                             </div>
@@ -134,12 +137,12 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                             <div className="flex-1 flex flex-col">
                                 <div className="flex items-center justify-between px-6 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Live Workspace</span>
-                                    <button onClick={handlePublish} className="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-widest">Publish Deployment</button>
+                                    <button onClick={handlePublish} className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest transition-colors">Publish Deployment</button>
                                 </div>
                                 {publishedUrl && (
                                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 flex items-center justify-between gap-4 animate-slide-up">
                                         <p className="text-[9px] font-mono truncate text-blue-800 dark:text-blue-300">DEPLOYED: {publishedUrl}</p>
-                                        <button onClick={() => { navigator.clipboard.writeText(publishedUrl); setPublishedUrl(null); }} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-bold uppercase">Copy</button>
+                                        <button onClick={() => { navigator.clipboard.writeText(publishedUrl); setPublishedUrl(null); }} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-bold uppercase hover:bg-blue-700 transition-colors">Copy Link</button>
                                     </div>
                                 )}
                                 <iframe srcDoc={result} className="flex-1 w-full border-none bg-white" title="UI Preview" />
@@ -148,9 +151,9 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                             <div className="flex-1 p-6 overflow-hidden flex flex-col">
                                 <div className="flex justify-between mb-4">
                                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Raw Source</span>
-                                     <button onClick={() => navigator.clipboard.writeText(result)} className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:scale-105 transition-all"><CopyIcon className="w-4 h-4"/></button>
+                                     <button onClick={() => navigator.clipboard.writeText(result)} className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:scale-105 transition-all active:scale-95"><CopyIcon className="w-4 h-4"/></button>
                                 </div>
-                                <pre className="flex-1 p-6 bg-slate-900 text-slate-100 rounded-2xl text-xs overflow-auto scrollbar-hide font-mono leading-relaxed">
+                                <pre className="flex-1 p-6 bg-slate-900 text-slate-100 rounded-2xl text-xs overflow-auto custom-scrollbar font-mono leading-relaxed">
                                     {result}
                                 </pre>
                             </div>
@@ -163,7 +166,7 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
 
     return (
         <div className="h-full overflow-y-auto bg-white dark:bg-[#020617] p-4 sm:p-10 animate-fade-in custom-scrollbar">
-            <div className="max-w-6xl mx-auto space-y-10">
+            <div className="max-w-6xl mx-auto space-y-10 pb-20">
                 <header>
                     <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight uppercase leading-none mb-2">Cognix Lab</h2>
                     <p className="text-black dark:text-slate-400 font-bold text-[11px] uppercase tracking-widest">Professional Creation Node</p>
@@ -191,11 +194,11 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                 </div>
 
                 <div className="max-w-xl mx-auto space-y-6">
-                    <div className="p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                    <div className="p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4 transition-all focus-within:border-black dark:focus-within:border-white">
                         {activeTool === 'scanner' && (
                             <div className="mb-4">
                                 <button onClick={() => fileRef.current?.click()} className="w-full py-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all group hover:bg-slate-50 dark:hover:bg-slate-950">
-                                    {selectedImage ? <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-20 h-20 rounded-xl object-cover shadow-lg" alt="Scan Asset" /> : <ImageIcon className="w-8 h-8 text-slate-400" />}
+                                    {selectedImage ? <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-20 h-20 rounded-xl object-cover shadow-lg border-2 border-white dark:border-slate-700" alt="Scan Asset" /> : <ImageIcon className="w-8 h-8 text-slate-400" />}
                                     <span className="text-[9px] font-bold uppercase tracking-widest">Inject Asset</span>
                                     <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={(e) => {
                                         const f = e.target.files?.[0];
@@ -208,19 +211,20 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                                 </button>
                             </div>
                         )}
-                        <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="Provide context..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none text-black dark:text-white text-sm font-medium" />
+                        <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder="Provide context..." className="w-full p-4 h-32 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none text-black dark:text-white text-sm font-medium focus:border-black dark:focus:border-white transition-all resize-none" />
                         <button onClick={runTool} disabled={loading || (!input.trim() && !selectedImage)} className="w-full py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.3em] text-white bg-black dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-20 active:scale-95 transition-all shadow-md">
                             {loading ? 'Synthesizing...' : `Execute ${activeTool.toUpperCase()}`}
                         </button>
                     </div>
                     {result && (
-                        <div className="p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-fade-in relative shadow-sm overflow-hidden">
-                            <button onClick={() => navigator.clipboard.writeText(result)} className="absolute top-4 right-4 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-all active:scale-90"><CopyIcon className="w-4 h-4" /></button>
+                        <div className="p-8 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-slide-up relative shadow-sm overflow-hidden">
+                            <button onClick={() => navigator.clipboard.writeText(result)} className="absolute top-4 right-4 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-all active:scale-90 hover:text-blue-600"><CopyIcon className="w-4 h-4" /></button>
                             <div className="max-w-none text-black dark:text-white font-medium leading-relaxed text-sm whitespace-pre-wrap">{result}</div>
                         </div>
                     )}
                 </div>
             </div>
+            <p className="text-center py-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] select-none">Persistent Intelligence Layer 11.0</p>
         </div>
     );
 };

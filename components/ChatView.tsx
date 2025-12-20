@@ -42,11 +42,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
       title: currentChat?.title || 'Shared Session',
       messages: messages.slice(-20) 
     };
-    const b64 = btoa(JSON.stringify(data));
-    const url = `${window.location.origin}${window.location.pathname}?handshake=${b64}`;
-    navigator.clipboard.writeText(url);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    try {
+        const b64 = btoa(JSON.stringify(data));
+        const url = `${window.location.origin}${window.location.pathname}?handshake=${b64}`;
+        navigator.clipboard.writeText(url);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+    } catch(e) { console.error("Sharing failed", e); }
   };
 
   const handleSend = useCallback(async () => {
@@ -75,19 +77,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
       const isImgRequest = /draw|image|create image|generate image/i.test(trimmedInput);
       
       let targetModel = model;
-      // Personality & Global Formatting Rule: No stars/asterisks
-      let finalInstruction = systemInstruction + " IMPORTANT: DO NOT use markdown bolding with asterisks (e.g., *** or **). Use plain text or other symbols. Avoid '***' symbols entirely in your response.";
+      let finalInstruction = systemInstruction + " IMPORTANT: DO NOT USE BOLD OR ITALIC MARKDOWN (no ** or ***). Use plain text ONLY. Avoid '*' symbols completely in your output formatting.";
 
       let config: any = { systemInstruction: finalInstruction };
 
-      // Config based on User Request: Clora (Pro) takes time/reasoning, CognixV2 (Flash) is fast.
       if (model === 'gemini-3-pro-preview') {
-        // This is now "Clora" (High Fidelity)
         config.thinkingConfig = { thinkingBudget: 32768 };
-        config.systemInstruction += " You are Clora, the high-fidelity reasoning engine. Be deep, analytical, and professional.";
+        config.systemInstruction += " You are Clora, a high-fidelity reasoning node. Your intelligence is profound but requires more processing cycles.";
       } else if (model === 'gemini-3-flash-preview') {
-        // This is now "CognixV2" (Fast Pulse)
-        config.systemInstruction += " You are CognixV2, a fast and friendly pulse engine. Use relevant emojis to make chat fun and engaging.";
+        config.systemInstruction += " You are CognixV2, a lightning-fast pulse node. Be rapid, fun, and use emojis.";
       }
 
       if (isImgRequest) targetModel = 'gemini-2.5-flash-image';
@@ -111,7 +109,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, parts: resParts, isSearching: false } : m));
     } catch (e) {
-      setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, parts: [{ text: "Neural link lost. Retrying..." }], isSearching: false } : m));
+      setMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, parts: [{ text: "Neural link lost. Recovering..." }], isSearching: false } : m));
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +128,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       
       <div 
         ref={containerRef} 
-        className={`flex-1 overflow-y-auto px-4 sm:px-12 md:px-24 lg:px-48 scroll-smooth transition-all ${
+        className={`flex-1 overflow-y-auto px-4 sm:px-12 md:px-24 lg:px-48 scroll-smooth transition-all custom-scrollbar ${
           hasMessages ? 'pb-40 pt-6' : 'flex flex-col items-center justify-center min-h-[90dvh] pb-64 px-6'
         }`}
       >
