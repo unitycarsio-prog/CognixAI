@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChatView } from './components/ChatView';
 import { LiveView } from './components/LiveView';
@@ -25,8 +26,8 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeModel, setActiveModel] = useState<ModelType>('gemini-3-flash-preview');
-  const [systemInstruction, setSystemInstruction] = useState("Hey! I'm Cognix, your elite AI companion. I focus on precision and creative intelligence.");
+  const [activeModel, setActiveModel] = useState<ModelType>('cognix-rv2');
+  const [systemInstruction, setSystemInstruction] = useState("I am CognixAi, an assistant created by Shashwat Ranjan Jha. IMPORTANT: Do not use bold markdown symbols like '***' or '**'. Use plain text. For my default mode (CognixRv2), I should use helpful emojis to be more friendly and expressive.");
   const [deploymentHtml, setDeploymentHtml] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -52,7 +53,6 @@ const App: React.FC = () => {
 
     const params = new URLSearchParams(window.location.search);
     
-    // Neural Handshake (Session Sharing)
     const handshake = params.get('handshake');
     if (handshake) {
       try {
@@ -71,7 +71,6 @@ const App: React.FC = () => {
       } catch (e) { console.error("Neural link handshake failed", e); }
     }
 
-    // UI Deployment Loader
     const deployment = params.get('deployment');
     if (deployment) {
       try {
@@ -131,12 +130,21 @@ const App: React.FC = () => {
     }
   };
 
+  const getModeLabel = (m: Mode) => {
+    switch(m) {
+      case 'chat': return 'CORE CHAT';
+      case 'toolbox': return 'COGNIX LAB';
+      case 'community': return 'COLLECTIVE';
+      default: return m.toUpperCase();
+    }
+  };
+
   return (
-    <div className="h-full w-full flex bg-white dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-sans">
+    <div className="h-full w-full flex bg-white dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-sans text-slate-900 dark:text-slate-100">
       {deploymentHtml ? (
         <div className="fixed inset-0 z-[1000] bg-white dark:bg-black">
           <div className="absolute top-6 right-6 z-[1001]">
-            <button onClick={() => setDeploymentHtml(null)} className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black rounded-2xl font-black text-[10px] uppercase shadow-2xl transition-all active:scale-95">De-Infect Preview</button>
+            <button onClick={() => setDeploymentHtml(null)} className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black rounded-2xl font-semibold text-[10px] uppercase shadow-2xl transition-all active:scale-95">De-Infect Preview</button>
           </div>
           <iframe srcDoc={deploymentHtml} className="w-full h-full border-none" />
         </div>
@@ -160,37 +168,36 @@ const App: React.FC = () => {
       />
 
       <div className={`flex-1 flex flex-col h-full relative overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-0' : ''}`}>
-        <header className="h-14 sm:h-20 flex items-center justify-between px-4 sm:px-12 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-slate-100 dark:border-slate-800 transition-colors">
-          <div className="flex items-center gap-4 sm:gap-8">
+        <header className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-8 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-slate-100 dark:border-slate-800 transition-colors">
+          <div className="flex items-center gap-4">
             <button onClick={() => {
               if (window.innerWidth < 1024) setIsSidebarOpen(true);
               else setIsSidebarCollapsed(!isSidebarCollapsed);
-            }} className="p-2.5 -ml-2 text-slate-900 dark:text-white transition-all hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl active:scale-90">
-              <MenuIcon className="w-6 h-6"/>
+            }} className="p-2 -ml-2 text-slate-900 dark:text-white transition-all hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl active:scale-90">
+              <MenuIcon className="w-5 h-5"/>
             </button>
-            <div className="flex items-center gap-3 sm:gap-5">
-              <BotIcon className="w-9 h-9 sm:w-11 sm:h-11 cursor-pointer transition-transform hover:scale-105" onClick={handleNewChat} />
-              <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+            <div className="flex items-center gap-3">
+              <BotIcon className="w-7 h-7 cursor-pointer transition-transform hover:scale-105" onClick={handleNewChat} />
               <div className="flex flex-col">
-                <span className="text-[15px] sm:text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none italic">{mode.toUpperCase()}</span>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">Uplink 11.0</span>
+                <span className="text-[14px] font-bold text-slate-900 dark:text-white tracking-tight leading-none">CognixAi</span>
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{getModeLabel(mode)} MODE</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => setMode(mode === 'live' ? 'chat' : 'live')}
-              className={`w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl transition-all shadow-sm border ${mode === 'live' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white animate-pulse' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-black dark:hover:text-white'}`}
+              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all shadow-sm border ${mode === 'live' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white animate-pulse' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-black dark:hover:text-white'}`}
               title="Voice Protocol"
             >
-              <MicrophoneIcon className="w-5 h-5" />
+              <MicrophoneIcon className="w-4 h-4" />
             </button>
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-slate-400 hover:text-black dark:hover:text-white transition-all shadow-sm border border-slate-200 dark:border-slate-700"
+              className="w-9 h-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 rounded-xl text-slate-400 hover:text-black dark:hover:text-white transition-all shadow-sm border border-slate-200 dark:border-slate-700"
             >
-              <UserIcon className="w-5 h-5" />
+              <UserIcon className="w-4 h-4" />
             </button>
           </div>
         </header>

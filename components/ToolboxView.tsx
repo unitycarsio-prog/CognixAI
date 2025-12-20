@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { CodeIcon, CopyIcon, ImageIcon, SparklesIcon, SendIcon } from './Icons';
+import { CodeIcon, CopyIcon, ImageIcon, SparklesIcon, SendIcon, BoltIcon } from './Icons';
 import type { ThemeColors, ModelType } from '../types';
 
 export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = ({ theme, model }) => {
@@ -28,7 +28,18 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             let instruction = "";
-            let targetModel = model;
+            // FIX: targetModelName is now a string to avoid type errors and use actual Gemini model strings.
+            let targetModelName: string = "";
+
+            // FIX: Map the model prop (ModelType) to the corresponding Google GenAI model string as per guidelines.
+            switch(model) {
+                case 'cognix-rv2': targetModelName = 'gemini-3-flash-preview'; break;
+                case 'clora-v1': targetModelName = 'gemini-3-pro-preview'; break;
+                case 'clorea-v2.5': targetModelName = 'gemini-flash-lite-latest'; break;
+                case 'arctic-x': targetModelName = 'gemini-3-pro-preview'; break;
+                case 'visualizer': targetModelName = 'gemini-2.5-flash-image'; break;
+                default: targetModelName = 'gemini-3-flash-preview';
+            }
 
             if (activeTool === 'dev') {
                 logActivity("Initializing Neural Architecture...");
@@ -40,7 +51,8 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
 
             switch(activeTool) {
                 case 'summarizer': instruction = "Summarize the following into elite bullet points."; break;
-                case 'scanner': instruction = "Analyze this image in high detail."; targetModel = 'gemini-3-flash-preview'; break;
+                // FIX: Setting targetModelName to a valid model string literal instead of using targetModel (which was typed as ModelType).
+                case 'scanner': instruction = "Analyze this image in high detail."; targetModelName = 'gemini-3-flash-preview'; break;
                 case 'writer': instruction = "Write professional engaging content."; break;
                 case 'enhancer': instruction = "Engineer a high-fidelity prompt from this input."; break;
                 case 'dev': instruction = "ACT AS A SENIOR FRONTEND ENGINEER. Build a modern, mobile-responsive single-file landing page using Tailwind CSS. OUTPUT RAW HTML ONLY starting with <!DOCTYPE html>. No commentary."; break;
@@ -52,7 +64,7 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
             }
 
             const response = await ai.models.generateContent({
-                model: targetModel,
+                model: targetModelName,
                 contents: [{ parts }],
             });
             
@@ -167,9 +179,24 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
     return (
         <div className="h-full overflow-y-auto bg-white dark:bg-[#020617] p-4 sm:p-10 animate-fade-in custom-scrollbar">
             <div className="max-w-6xl mx-auto space-y-10 pb-20">
-                <header>
-                    <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight uppercase leading-none mb-2">Cognix Lab</h2>
-                    <p className="text-black dark:text-slate-400 font-bold text-[11px] uppercase tracking-widest">Professional Creation Node</p>
+                <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight uppercase leading-none mb-2">Cognix Lab</h2>
+                        <p className="text-slate-500 dark:text-slate-400 font-bold text-[11px] uppercase tracking-widest">Neural Prototyping Terminal</p>
+                    </div>
+                    {/* Visual Badge/Badge Visualization */}
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <div className="relative w-8 h-8">
+                            <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-ping"></div>
+                            <div className="relative flex items-center justify-center w-full h-full bg-blue-600 rounded-xl shadow-lg shadow-blue-500/30">
+                                <BoltIcon className="w-4 h-4 text-white" />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-black dark:text-white uppercase leading-none">Lab Active</p>
+                            <p className="text-[8px] font-bold text-blue-500 uppercase tracking-widest mt-1">Uplink 11.2</p>
+                        </div>
+                    </div>
                 </header>
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -186,7 +213,7 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                             <p className={`text-[13px] font-bold tracking-tight leading-none ${activeTool === tool.id ? 'text-black dark:text-white' : 'text-slate-800 dark:text-slate-300'}`}>
                                 {tool.label}
                             </p>
-                            <p className="text-[8px] text-black dark:text-slate-500 font-bold uppercase tracking-widest opacity-80">
+                            <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">
                                 {tool.desc}
                             </p>
                         </button>
@@ -224,7 +251,7 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
                     )}
                 </div>
             </div>
-            <p className="text-center py-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] select-none">Persistent Intelligence Layer 11.0</p>
+            <p className="text-center py-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] select-none">Persistent Intelligence Layer 11.2</p>
         </div>
     );
 };

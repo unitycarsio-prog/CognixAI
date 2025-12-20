@@ -1,12 +1,15 @@
+
 export type Mode = 'chat' | 'live' | 'toolbox' | 'community';
 export type UIStyle = 'modern' | 'glass' | 'brutal' | 'retro';
 export type AccentColor = 'blue' | 'violet' | 'emerald' | 'rose' | 'amber';
 export type FontSize = 'small' | 'normal' | 'large';
+
 export type ModelType = 
-  | 'gemini-3-pro-preview'      // CognixV2 / CoreaRv1
-  | 'gemini-3-flash-preview'    // Gemini 3.0 Flash / CloraN1
-  | 'gemini-flash-lite-latest'  // Flash Lite
-  | 'gemini-2.5-flash-image';   // Neural Visualizer
+  | 'cognix-rv2'      // gemini-3-flash-preview (Fast/Friendly)
+  | 'clora-v1'       // gemini-3-pro-preview (Reasoning)
+  | 'clorea-v2.5'    // gemini-flash-lite-latest (Lightweight)
+  | 'arctic-x'       // gemini-3-pro-preview (Coding)
+  | 'visualizer';    // gemini-2.5-flash-image
 
 export interface Friend {
   id: string;

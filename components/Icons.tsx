@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const BotIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -6,6 +7,37 @@ export const BotIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <circle cx="50" cy="30" r="5" fill="white" opacity="0.9" />
     <circle cx="35" cy="52" r="9" fill="white" />
     <circle cx="65" cy="52" r="9" fill="white" />
+  </svg>
+);
+
+export const CoreChatIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <path d="M12 4v2M12 18v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4 12h2M18 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+);
+
+export const LabIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 9c0-2.209 3.134-4 7-4s7 1.791 7 4c0 1.258-1.015 2.37-2.585 3.102C15.938 12.443 15 13.5 15 15v1" />
+    <path d="M9 16c0 1.5 1.5 3 3 3s3-1.5 3-3" />
+    <path d="M8 9h.01M16 9h.01" />
+  </svg>
+);
+
+export const CollectiveIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+export const AttachmentPlusIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    <circle cx="19" cy="5" r="3" fill="#3B82F6" stroke="none" />
+    <path d="M18 5h2M19 4v2" stroke="white" strokeWidth="1" />
   </svg>
 );
 
@@ -44,13 +76,6 @@ export const BoltIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 export const BrainIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-
-export const GraduationCapIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-    <path d="M6 12v5c3 3 9 3 12 0v-5" />
   </svg>
 );
 
