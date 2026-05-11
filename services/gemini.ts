@@ -1,6 +1,11 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// FIX: Initialized GoogleGenAI directly with process.env.API_KEY as per guidelines.
-// The API key is assumed to be available in the environment.
-export const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Use the standard environment variable for the Gemini API key
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.warn("GEMINI_API_KEY is not defined in the environment.");
+}
+
+export const ai = new GoogleGenAI({ apiKey: apiKey || "" });

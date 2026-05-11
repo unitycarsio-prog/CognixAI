@@ -1,24 +1,25 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChatView } from './components/ChatView';
-import { LiveView } from './components/LiveView';
+import { ImagineView } from './components/ImagineView';
 import { Sidebar } from './components/Sidebar';
 import { CommunityView } from './components/CommunityView';
 import { ToolboxView } from './components/ToolboxView';
-import { MenuIcon, BotIcon, UserIcon, MicrophoneIcon } from './components/Icons';
+import { MemoryView } from './components/MemoryView';
 import { SettingsModal } from './components/SettingsModal';
+import { BotIcon } from './components/Icons';
+import { Menu, User, Bell, Search, Sparkles, Moon, Sun } from 'lucide-react';
 import type { ChatMessage, ChatSession, Mode, ThemeColors, ModelType, MemoryFact } from './types';
 
 const THEME: ThemeColors = {
-    primary: 'bg-black dark:bg-white',
-    primaryHover: 'hover:opacity-90',
-    text: 'text-black dark:text-white',
-    textDark: 'text-white dark:text-black',
+    primary: 'bg-[#1E293B]',
+    primaryHover: 'hover:bg-[#0F172A]',
+    text: 'text-slate-900',
+    textDark: 'text-white',
     bgSoft: 'bg-slate-50',
-    darkBgSoft: 'dark:bg-slate-900',
-    border: 'border-slate-200 dark:border-slate-800',
-    ring: 'focus:ring-black dark:focus:ring-white',
-    gradient: 'bg-black dark:bg-white'
+    darkBgSoft: 'dark:bg-[#0F172A]',
+    border: 'border-slate-200',
+    ring: 'focus:ring-slate-400/20',
+    gradient: 'bg-slate-900'
 };
 
 const App: React.FC = () => {
@@ -26,14 +27,19 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeModel, setActiveModel] = useState<ModelType>('cognix-rv2');
-  const [systemInstruction, setSystemInstruction] = useState("I am CognixAi, an assistant created by Shashwat Ranjan Jha. IMPORTANT: Do not use bold markdown symbols like '***' or '**'. Use plain text. For my default mode (CognixRv2), I should use helpful emojis to be more friendly and expressive.");
-  const [deploymentHtml, setDeploymentHtml] = useState<string | null>(null);
-
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
+  
+  const [activeModel, setActiveModel] = useState<ModelType>('pro');
+  const [systemInstruction, setSystemInstruction] = useState("I am Cognix Pro, a high-performance neural assistant developed, trained, and engineered by Shashwat Ranjan Jha. I specialize in deep reasoning, precise technical execution, and elegant problem-solving. Use professional, concise language. My architecture is private and secure.");
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [memories, setMemories] = useState<MemoryFact[]>([]);
 
   const currentChat = useMemo(() => chatHistory.find(c => c.id === activeChatId), [chatHistory, activeChatId]);
@@ -41,47 +47,6 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedHistory = localStorage.getItem('cognix_v8_history');
     if (savedHistory) setChatHistory(JSON.parse(savedHistory));
-    
-    const savedVault = localStorage.getItem('nexzi_vault');
-    if (savedVault) setMemories(JSON.parse(savedVault));
-
-    const themeSaved = localStorage.getItem('cognix_theme');
-    if (themeSaved === 'dark') {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    
-    const handshake = params.get('handshake');
-    if (handshake) {
-      try {
-        const decodedStr = decodeURIComponent(escape(atob(handshake)));
-        const decoded = JSON.parse(decodedStr);
-        const newId = 'collective-' + Date.now();
-        const sharedChat: ChatSession = {
-          id: newId,
-          title: decoded.title || 'Shared Pulse',
-          messages: decoded.messages || [],
-          participants: ['You', 'Handshake Node']
-        };
-        setChatHistory(prev => [sharedChat, ...prev]);
-        setActiveChatId(newId);
-        setMode('chat');
-      } catch (e) { console.error("Neural link handshake failed", e); }
-    }
-
-    const deployment = params.get('deployment');
-    if (deployment) {
-      try {
-        const decoded = decodeURIComponent(escape(atob(deployment)));
-        setDeploymentHtml(decoded);
-      } catch (e) { console.error("Deployment asset failed to load", e); }
-    }
-
-    if (handshake || deployment) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
   }, []);
 
   useEffect(() => {
@@ -89,24 +54,34 @@ const App: React.FC = () => {
   }, [chatHistory]);
 
   useEffect(() => {
-    localStorage.setItem('nexzi_vault', JSON.stringify(memories));
-  }, [memories]);
-
-  useEffect(() => { 
-    setMessages(currentChat ? currentChat.messages : []); 
-  }, [currentChat?.id]);
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   const handleUpdateMessages = (updater: (prev: ChatMessage[]) => ChatMessage[]) => {
     setMessages(prev => {
       const next = updater(prev);
       if (activeChatId) {
-        setChatHistory(h => h.map(c => c.id === activeChatId ? { ...c, messages: next } : c));
+        setChatHistory(h => h.map(c => c.id === activeChatId ? { ...c, messages: next } : h.find(cx => cx.id === activeChatId) ? h.map(cx => cx.id === activeChatId ? {...cx, messages: next} : cx) : c) as any);
+        // More robust history update
+        setChatHistory(h => {
+             const existingIdx = h.findIndex(c => c.id === activeChatId);
+             if (existingIdx !== -1) {
+                const newH = [...h];
+                newH[existingIdx] = { ...newH[existingIdx], messages: next };
+                return newH;
+             }
+             return h;
+        });
       } else if (next.length > 0) {
         const newId = Date.now().toString();
         const firstUserMsg = next.find(m => m.role === 'user');
-        const titleText = firstUserMsg?.parts.find(p => p.text)?.text;
-        const title = titleText ? titleText.slice(0, 40) : 'New Pulse';
-        setChatHistory([{ id: newId, title: title || 'New Pulse', messages: next, participants: ['You'] }, ...chatHistory]);
+        const titleText = firstUserMsg?.parts.find(p => p.text)?.text || 'New Synthesis';
+        const newChat: ChatSession = { id: newId, title: titleText.slice(0, 30), messages: next, participants: ['You'] };
+        setChatHistory([newChat, ...chatHistory]);
         setActiveChatId(newId);
       }
       return next;
@@ -119,90 +94,69 @@ const App: React.FC = () => {
     setMode('chat');
   };
 
-  const toggleDarkMode = (dark: boolean) => {
-    setIsDarkMode(dark);
-    if (dark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('cognix_theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('cognix_theme', 'light');
-    }
-  };
-
-  const getModeLabel = (m: Mode) => {
-    switch(m) {
-      case 'chat': return 'CORE CHAT';
-      case 'toolbox': return 'COGNIX LAB';
-      case 'community': return 'COLLECTIVE';
-      default: return m.toUpperCase();
-    }
-  };
+  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   return (
-    <div className="h-full w-full flex bg-white dark:bg-slate-950 transition-colors duration-500 overflow-hidden font-sans text-slate-900 dark:text-slate-100">
-      {deploymentHtml ? (
-        <div className="fixed inset-0 z-[1000] bg-white dark:bg-black">
-          <div className="absolute top-6 right-6 z-[1001]">
-            <button onClick={() => setDeploymentHtml(null)} className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black rounded-2xl font-semibold text-[10px] uppercase shadow-2xl transition-all active:scale-95">De-Infect Preview</button>
-          </div>
-          <iframe srcDoc={deploymentHtml} className="w-full h-full border-none" />
-        </div>
-      ) : null}
-
+    <div className="h-full w-full flex bg-white dark:bg-cognix-950 font-sans text-slate-900 transition-colors duration-300 overflow-hidden">
       <Sidebar 
         chatHistory={chatHistory} 
         activeChatId={activeChatId} 
         mode={mode}
         onSetMode={setMode}
-        onSelectChat={(id) => { setActiveChatId(id); setMode('chat'); }}
-        onNewChat={handleNewChat}
-        onDeleteChat={(id) => { 
-          setChatHistory(h => h.filter(c => c.id !== id)); 
-          if(activeChatId === id) handleNewChat(); 
+        onSelectChat={(id) => { 
+            setActiveChatId(id); 
+            const chat = chatHistory.find(c => c.id === id);
+            if(chat) setMessages(chat.messages);
+            setMode('chat'); 
         }}
+        onNewChat={handleNewChat}
+        onDeleteChat={() => {}}
         isSidebarOpen={isSidebarOpen}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className={`flex-1 flex flex-col h-full relative overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-0' : ''}`}>
-        <header className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-8 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-slate-100 dark:border-slate-800 transition-colors">
-          <div className="flex items-center gap-4">
-            <button onClick={() => {
-              if (window.innerWidth < 1024) setIsSidebarOpen(true);
-              else setIsSidebarCollapsed(!isSidebarCollapsed);
-            }} className="p-2 -ml-2 text-slate-900 dark:text-white transition-all hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl active:scale-90">
-              <MenuIcon className="w-5 h-5"/>
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+        <header className="h-[80px] flex items-center justify-between px-6 md:px-10 border-b border-slate-100 dark:border-cognix-900 bg-slate-50 dark:bg-cognix-950 shrink-0 z-40">
+          <div className="flex items-center gap-6">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-blue-500 lg:hidden">
+              <Menu size={24}/>
             </button>
-            <div className="flex items-center gap-3">
-              <BotIcon className="w-7 h-7 cursor-pointer transition-transform hover:scale-105" onClick={handleNewChat} />
+            <div className="flex items-center gap-4">
+              <BotIcon className="w-9 h-9 lg:hidden" />
               <div className="flex flex-col">
-                <span className="text-[14px] font-bold text-slate-900 dark:text-white tracking-tight leading-none">CognixAi</span>
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{getModeLabel(mode)} MODE</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1">
+                   {mode === 'chat' ? 'Workspace' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                  Cognix Pro
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-4">
             <button 
-              onClick={() => setMode(mode === 'live' ? 'chat' : 'live')}
-              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all shadow-sm border ${mode === 'live' ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white animate-pulse' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-black dark:hover:text-white'}`}
-              title="Voice Protocol"
+                onClick={toggleDarkMode}
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-500 hover:bg-slate-50 dark:hover:bg-cognix-900 transition-all active:scale-90"
             >
-              <MicrophoneIcon className="w-4 h-4" />
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="w-9 h-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 rounded-xl text-slate-400 hover:text-black dark:hover:text-white transition-all shadow-sm border border-slate-200 dark:border-slate-700"
-            >
-              <UserIcon className="w-4 h-4" />
+            <button className="w-10 h-10 hidden sm:flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-500 hover:bg-slate-50 dark:hover:bg-cognix-900 transition-all active:scale-90">
+              <Bell size={20} />
+            </button>
+            <div className="h-6 w-[1px] bg-slate-100 dark:bg-cognix-900 mx-1 hidden sm:block"></div>
+            <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-slate-50 dark:hover:bg-cognix-900 rounded-2xl transition-all group">
+              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-cognix-800 flex items-center justify-center text-slate-500 group-hover:text-blue-500 transition-colors">
+                 <User size={18} />
+              </div>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 hidden md:block">Shashwat</span>
             </button>
           </div>
         </header>
 
-        <main className="flex-1 relative overflow-hidden h-full">
+        <main className="flex-1 relative overflow-hidden bg-white dark:bg-cognix-950">
            {mode === 'chat' && (
               <ChatView 
                 messages={messages} 
@@ -220,9 +174,16 @@ const App: React.FC = () => {
                 memories={memories}
               />
            )}
-           {mode === 'live' && <LiveView />}
+           {mode === 'imagine' && <ImagineView />}
            {mode === 'toolbox' && <ToolboxView theme={THEME} model={activeModel} />}
            {mode === 'community' && <CommunityView theme={THEME} model={activeModel} />}
+           {mode === 'memory' && (
+               <MemoryView 
+                memories={memories} 
+                setMemories={setMemories} 
+                theme={THEME} 
+               />
+           )}
         </main>
       </div>
 
@@ -230,17 +191,16 @@ const App: React.FC = () => {
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
         isDarkMode={isDarkMode}
-        setIsDarkMode={toggleDarkMode}
+        setIsDarkMode={setIsDarkMode}
         systemInstruction={systemInstruction} 
         setSystemInstruction={setSystemInstruction}
         memories={memories}
         setMemories={setMemories}
-        onClearHistory={() => { 
-          setChatHistory([]); 
-          setMessages([]); 
-          setActiveChatId(null); 
-          setIsSettingsOpen(false); 
-          localStorage.removeItem('cognix_v8_history');
+        onClearHistory={() => {
+            setChatHistory([]);
+            setMessages([]);
+            setActiveChatId(null);
+            localStorage.removeItem('cognix_v8_history');
         }}
       />
     </div>

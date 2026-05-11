@@ -1,8 +1,20 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import { ai } from '../services/gemini';
 import type { ThemeColors, CommunityPost, ModelType } from '../types';
-import { BotIcon, SendIcon, ImageIcon, UsersIcon, SparklesIcon } from './Icons';
+import { 
+  Users, 
+  Send, 
+  Image as ImageIcon, 
+  Sparkles, 
+  MessageSquare, 
+  Heart, 
+  ShieldCheck, 
+  AlertCircle,
+  Plus,
+  X,
+  Globe
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> = ({ theme, model }) => {
     const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -18,14 +30,14 @@ export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> =
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const saved = localStorage.getItem('cognix_community_v25');
+        const saved = localStorage.getItem('cognix_community_v8');
         if (saved) setPosts(JSON.parse(saved));
         else setPosts([
             { 
                 id: '1', 
                 author: 'Neural Architect', 
                 authorId: 'sys',
-                content: 'Welcome to the Cognix Collective. Share architectural ideas, neural pulses, and logic workflows with the collective network.', 
+                content: 'Welcome to the Cognix Collective. Share architectural ideas, neural pulses, and logic workflows with the collective network. This is a local-first persistent mesh.', 
                 timestamp: Date.now(), 
                 likedBy: ['sys'], 
                 replies: [],
@@ -34,12 +46,12 @@ export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> =
         ]);
     }, []);
 
-    useEffect(() => localStorage.setItem('cognix_community_v25', JSON.stringify(posts)), [posts]);
+    useEffect(() => localStorage.setItem('cognix_community_v8', JSON.stringify(posts)), [posts]);
     useEffect(() => { if(username) localStorage.setItem('cognix_user_name', username); }, [username]);
 
     const handlePublish = async () => {
         if (!newPostContent.trim() || !username.trim()) {
-            setError('Identification and content required.');
+            setError('Identification and content required for broadcast.');
             return;
         }
         setIsPublishing(true);
@@ -47,10 +59,9 @@ export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> =
         setError(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const moderation = await ai.models.generateContent({
                 model: 'gemini-3-flash-preview',
-                contents: `Safety Audit: "${newPostContent}". Respond PASS or FAIL: [REASON].`,
+                contents: [{ role: 'user', parts: [{ text: `Safety Audit: "${newPostContent}". Respond ONLY with 'PASS' or 'FAIL: [REASON]'.` }] }],
             });
 
             const result = moderation.text?.trim() || "";
@@ -73,7 +84,7 @@ export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> =
                 setError(`Neural Guard: ${result.replace('FAIL:', '')}`);
             }
         } catch (e) {
-            setError('Network uplink failure.');
+            setError('Neural uplink failure during audit.');
         } finally {
             setIsPublishing(false);
             setSafetyScanner(false);
@@ -106,56 +117,86 @@ export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> =
     };
 
     return (
-        <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-6 custom-scrollbar">
-            <div className="max-w-2xl mx-auto space-y-8 pb-32">
-                <header className="text-center pt-8 flex flex-col items-center">
-                    {/* Visual Badge */}
+        <div className="h-full overflow-y-auto bg-white dark:bg-cognix-950 p-6 no-scrollbar technical-grid">
+            <div className="max-w-2xl mx-auto space-y-12 pb-32">
+                <header className="text-center pt-12 flex flex-col items-center">
                     <div className="mb-6 relative">
-                        <div className="absolute inset-0 bg-violet-500/30 blur-2xl rounded-full animate-pulse"></div>
-                        <div className="relative w-16 h-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center justify-center shadow-xl">
-                            <UsersIcon className="w-8 h-8 text-violet-500" />
+                        <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full animate-pulse"></div>
+                        <div className="relative w-16 h-16 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-2xl">
+                            <Users size={32} />
                         </div>
                     </div>
-                    <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">Collective</h2>
-                    <p className="text-slate-500 dark:text-slate-400 font-bold text-[11px] uppercase tracking-[0.4em] mt-3">Neural Collective Synchronization</p>
+                    <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">The Collective</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-bold text-[11px] uppercase tracking-[0.4em] mt-3">Global Neural Relay Network</p>
                 </header>
 
-                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-slate-200 dark:border-slate-800 relative transition-all focus-within:border-violet-500/50">
-                    {safetyScanner && <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 flex flex-col items-center justify-center rounded-[2.5rem] font-black uppercase tracking-[0.3em] text-violet-600 animate-pulse">Neural Audit Active...</div>}
+                <div className="bg-white dark:bg-cognix-900 rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 dark:border-cognix-800 relative transition-all focus-within:ring-4 focus-within:ring-blue-500/5">
+                    <AnimatePresence>
+                      {safetyScanner && (
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0 bg-white/90 dark:bg-cognix-900/90 backdrop-blur-md z-10 flex flex-col items-center justify-center rounded-[2.5rem]"
+                        >
+                          <ShieldCheck size={48} className="text-blue-500 animate-bounce mb-4" />
+                          <p className="font-bold uppercase tracking-[0.3em] text-blue-600">Neural Audit in Progress</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-4">
                             <input 
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Identification Handle..."
-                                className="bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-5 py-3 text-xs font-bold text-violet-600 outline-none w-fit min-w-[200px] shadow-inner uppercase tracking-widest"
+                                placeholder="Neural ID..."
+                                className="bg-slate-50 dark:bg-cognix-950 border border-slate-100 dark:border-cognix-800 rounded-2xl px-5 py-3 text-xs font-bold text-blue-600 outline-none w-fit min-w-[200px] shadow-inner uppercase tracking-widest placeholder-slate-400"
                             />
-                            <div className="h-2 w-2 rounded-full bg-violet-600 animate-ping"></div>
                         </div>
                         
                          <textarea 
                             value={newPostContent}
                             onChange={(e) => setNewPostContent(e.target.value)}
-                            placeholder="Broadcast a neural pulse..."
-                            className="bg-slate-50 dark:bg-slate-800/50 border-none rounded-3xl p-6 min-h-[140px] outline-none text-slate-800 dark:text-slate-100 resize-none text-sm font-medium leading-relaxed shadow-inner"
+                            placeholder="Broadcast a neural pulse to the collective..."
+                            className="bg-slate-50 dark:bg-cognix-950 border border-slate-100 dark:border-cognix-800 rounded-3xl p-6 h-32 outline-none text-slate-800 dark:text-slate-100 resize-none text-sm font-medium leading-relaxed shadow-inner focus:border-blue-500 transition-all placeholder-slate-400"
                         />
                     </div>
                     
-                    {selectedImage && (
-                        <div className="mt-4 flex items-center gap-3 animate-fade-in-up px-2">
-                             <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-lg border-2 border-violet-600">
-                                <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-full h-full object-cover" alt="Pulse Media"/>
-                                <button onClick={() => setSelectedImage(null)} className="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-black text-xs">&times;</button>
-                             </div>
-                             <span className="text-[10px] font-black uppercase tracking-widest text-violet-600">Attachment Ready</span>
-                        </div>
-                    )}
+                    <AnimatePresence>
+                      {selectedImage && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="mt-6 flex items-center gap-4 px-2"
+                          >
+                               <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-xl border-2 border-blue-500 group">
+                                  <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-full h-full object-cover" alt="Pulse Media"/>
+                                  <button 
+                                    onClick={() => setSelectedImage(null)} 
+                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                  >
+                                    <X size={16}/>
+                                  </button>
+                               </div>
+                               <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Attachment Ready</span>
+                          </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                    {error && <p className="mt-4 text-[10px] font-bold text-red-500 uppercase tracking-widest px-2">{error}</p>}
+                    {error && (
+                      <div className="mt-6 flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-2xl animate-shake">
+                        <AlertCircle size={16} className="text-red-500" />
+                        <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest">{error}</p>
+                      </div>
+                    )}
                     
-                    <div className="flex justify-between items-center mt-6 px-2">
-                        <button onClick={() => fileInputRef.current?.click()} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-400 hover:text-violet-600 transition-all">
-                            <ImageIcon className="w-6 h-6"/>
+                    <div className="flex justify-between items-center mt-8 px-2">
+                        <button 
+                          onClick={() => fileInputRef.current?.click()} 
+                          className="w-12 h-12 flex items-center justify-center bg-slate-50 dark:bg-cognix-950 border border-slate-200 dark:border-cognix-800 rounded-2xl text-slate-400 hover:text-blue-500 transition-all"
+                        >
+                            <ImageIcon size={20}/>
                             <input type="file" ref={fileInputRef} onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -168,53 +209,91 @@ export const CommunityView: React.FC<{ theme: ThemeColors, model: ModelType }> =
                         <button 
                             onClick={handlePublish}
                             disabled={isPublishing || !newPostContent.trim() || !username.trim()}
-                            className="bg-violet-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-violet-500/20 disabled:opacity-50 active:scale-95 transition-all hover:bg-violet-700"
+                            className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-10 py-4 rounded-3xl font-bold text-xs uppercase tracking-[0.3em] shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-30 transition-all"
                         >
-                            Sync Pulse
+                            Synchronize Pulse
                         </button>
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    {posts.map(post => (
-                        <div key={post.id} className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all group">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center font-black text-violet-600 text-sm shadow-inner transition-transform group-hover:scale-110">{post.author[0]}</div>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">@{post.author.toLowerCase().replace(/\s+/g, '')}</span>
-                                    <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{new Date(post.timestamp).toLocaleDateString()} • Global Relay</span>
+                <div className="space-y-8">
+                    {posts.map((post, idx) => (
+                        <motion.div 
+                          key={post.id} 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className="bg-white dark:bg-cognix-900 rounded-[3rem] p-8 md:p-10 shadow-lg border border-slate-100 dark:border-cognix-800 hover:border-blue-500/30 transition-all group"
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center font-bold text-blue-600 text-lg shadow-inner group-hover:scale-110 transition-transform">
+                                    {post.author[0]}
+                                  </div>
+                                  <div className="flex flex-col">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">@{post.author.toLowerCase().replace(/\s+/g, '')}</span>
+                                        {post.authorId === 'sys' && <ShieldCheck size={14} className="text-blue-500" />}
+                                      </div>
+                                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 leading-none">
+                                        {new Date(post.timestamp).toLocaleDateString()} • RELAY {post.id.slice(-4)}
+                                      </span>
+                                  </div>
                                 </div>
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
                             </div>
-                            <p className="text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-loose mb-6 font-medium">{post.content}</p>
+
+                            <p className="text-slate-800 dark:text-slate-200 text-base leading-relaxed mb-8 font-medium">{post.content}</p>
                             
-                            <div className="flex items-center gap-6 text-slate-400 border-t border-slate-50 dark:border-slate-800/50 pt-6">
-                                <button onClick={() => toggleLike(post.id)} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors ${post.likedBy.includes('user_local') ? 'text-violet-600' : 'hover:text-slate-600'}`}>
-                                    <SparklesIcon className="w-5 h-5" fill={post.likedBy.includes('user_local') ? 'currentColor' : 'none'} />
-                                    {post.likedBy.length} Syncs
+                            <div className="flex items-center gap-8 text-slate-400 border-t border-slate-50 dark:border-cognix-800/50 pt-8 mt-2">
+                                <button 
+                                  onClick={() => toggleLike(post.id)} 
+                                  className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-all ${post.likedBy.includes('user_local') ? 'text-blue-600 scale-110' : 'hover:text-blue-500'}`}
+                                >
+                                    <Sparkles size={18} />
+                                    <span>{post.likedBy.length} Syncs</span>
                                 </button>
-                                <button onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-slate-600">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                    {post.replies.length} Persp.
+                                <button 
+                                  onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)} 
+                                  className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${replyingTo === post.id ? 'text-blue-500' : 'hover:text-blue-500'}`}
+                                >
+                                    <MessageSquare size={18} />
+                                    <span>{post.replies.length} Persp.</span>
                                 </button>
                             </div>
                             
-                            {(post.replies.length > 0 || replyingTo === post.id) && (
-                                <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-800/50 space-y-4">
-                                    {post.replies.map(reply => (
-                                        <div key={reply.id} className="text-xs bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
-                                            <span className="font-black text-violet-600 uppercase tracking-widest text-[9px]">@{reply.author.toLowerCase().replace(/\s+/g, '')}</span>
-                                            <p className="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed font-medium">{reply.content}</p>
-                                        </div>
-                                    ))}
-                                    {replyingTo === post.id && (
-                                        <div className="flex gap-3 mt-4">
-                                            <input value={replyText} onChange={(e) => setReplyText(e.target.value)} onKeyDown={e => e.key === 'Enter' && addReply(post.id)} placeholder="Inject perspective..." className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl px-5 py-3 text-xs outline-none border border-slate-100 dark:border-slate-700 shadow-inner font-medium" />
-                                            <button onClick={() => addReply(post.id)} className="bg-violet-600 text-white px-5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-md">Sync</button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                            <AnimatePresence>
+                              {(post.replies.length > 0 || replyingTo === post.id) && (
+                                  <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="mt-8 space-y-4">
+                                        {post.replies.map(reply => (
+                                            <div key={reply.id} className="p-5 bg-slate-50 dark:bg-cognix-950 rounded-2xl border border-slate-100 dark:border-cognix-800/50">
+                                                <span className="font-bold text-blue-600 uppercase tracking-widest text-[9px]">@{reply.author.toLowerCase().replace(/\s+/g, '')}</span>
+                                                <p className="text-slate-600 dark:text-slate-300 mt-2 text-sm leading-relaxed font-medium">{reply.content}</p>
+                                            </div>
+                                        ))}
+                                        {replyingTo === post.id && (
+                                            <div className="flex gap-3 mt-6">
+                                                <input 
+                                                  value={replyText} 
+                                                  onChange={(e) => setReplyText(e.target.value)} 
+                                                  onKeyDown={e => e.key === 'Enter' && addReply(post.id)} 
+                                                  placeholder="Inject perspective..." 
+                                                  className="flex-1 bg-slate-50 dark:bg-cognix-950 rounded-2xl px-5 py-3 text-xs outline-none border border-slate-100 dark:border-cognix-800 shadow-inner font-bold placeholder-slate-400" 
+                                                />
+                                                <button onClick={() => addReply(post.id)} className="px-6 bg-slate-900 dark:bg-blue-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-md hover:scale-105 active:scale-95 transition-all">Relay</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                  </motion.div>
+                              )}
+                            </AnimatePresence>
+                        </motion.div>
                     ))}
                 </div>
             </div>
