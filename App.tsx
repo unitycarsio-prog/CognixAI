@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChatView } from './components/ChatView';
-import { ImagineView } from './components/ImagineView';
 import { Sidebar } from './components/Sidebar';
-import { CommunityView } from './components/CommunityView';
 import { ToolboxView } from './components/ToolboxView';
 import { MemoryView } from './components/MemoryView';
 import { SettingsModal } from './components/SettingsModal';
@@ -35,7 +34,7 @@ const App: React.FC = () => {
   });
   
   const [activeModel, setActiveModel] = useState<ModelType>('pro');
-  const [systemInstruction, setSystemInstruction] = useState("I am Cognix Pro, a high-performance neural assistant developed, trained, and engineered by Shashwat Ranjan Jha. I specialize in deep reasoning, precise technical execution, and elegant problem-solving. Use professional, concise language. My architecture is private and secure.");
+  const [systemInstruction, setSystemInstruction] = useState("I am Cognix Pro, a high-performance neural assistant. I specialize in deep reasoning, precise technical execution, and elegant problem-solving. Use professional, concise language. My architecture is private and secure.");
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
@@ -118,19 +117,16 @@ const App: React.FC = () => {
       />
 
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-        <header className="h-[80px] flex items-center justify-between px-6 md:px-10 border-b border-slate-100 dark:border-cognix-900 bg-slate-50 dark:bg-cognix-950 shrink-0 z-40">
+        <header className="h-[64px] flex items-center justify-between px-6 md:px-10 border-b border-slate-100 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shrink-0 z-40">
           <div className="flex items-center gap-6">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-blue-500 lg:hidden">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-violet-500 lg:hidden">
               <Menu size={24}/>
             </button>
-            <div className="flex items-center gap-4">
-              <BotIcon className="w-9 h-9 lg:hidden" />
+            <div className="flex items-center gap-8">
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1">
-                   {mode === 'chat' ? 'Workspace' : mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                  Cognix Pro
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] leading-none mb-1 opacity-60">Neural Workspace</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white leading-none">
+                   {mode === 'chat' ? 'Cognix Nexus' : mode.charAt(0).toUpperCase() + mode.slice(1).replace('box', ' Modules')}
                 </span>
               </div>
             </div>
@@ -139,51 +135,80 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2 md:gap-4">
             <button 
                 onClick={toggleDarkMode}
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-500 hover:bg-slate-50 dark:hover:bg-cognix-900 transition-all active:scale-90"
+                className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-violet-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
             >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <button className="w-10 h-10 hidden sm:flex items-center justify-center rounded-xl text-slate-400 hover:text-blue-500 hover:bg-slate-50 dark:hover:bg-cognix-900 transition-all active:scale-90">
-              <Bell size={20} />
-            </button>
-            <div className="h-6 w-[1px] bg-slate-100 dark:bg-cognix-900 mx-1 hidden sm:block"></div>
-            <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-3 pl-3 pr-4 py-2 hover:bg-slate-50 dark:hover:bg-cognix-900 rounded-2xl transition-all group">
-              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-cognix-800 flex items-center justify-center text-slate-500 group-hover:text-blue-500 transition-colors">
-                 <User size={18} />
+            <div className="h-5 w-[1px] bg-slate-100 dark:bg-slate-800 mx-1 hidden sm:block"></div>
+            <button onClick={() => setIsSettingsOpen(true)} className="flex items-center gap-2.5 pl-2.5 pr-3.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all group border border-transparent hover:border-slate-200 dark:hover:border-slate-800">
+              <div className="w-7 h-7 rounded-lg bg-slate-950 text-white flex items-center justify-center shadow-lg shadow-violet-500/10">
+                 <User size={16} />
               </div>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 hidden md:block">Shashwat</span>
+              <div className="flex flex-col items-start hidden md:flex">
+                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Admin</span>
+                 <span className="text-[11px] font-bold text-slate-900 dark:text-white">Workspace</span>
+              </div>
             </button>
           </div>
         </header>
 
         <main className="flex-1 relative overflow-hidden bg-white dark:bg-cognix-950">
-           {mode === 'chat' && (
-              <ChatView 
-                messages={messages} 
-                setMessages={(val) => {
-                  if (typeof val === 'function') handleUpdateMessages(val as any);
-                  else handleUpdateMessages(() => val as any);
-                }} 
-                systemInstruction={systemInstruction} 
-                model={activeModel} 
-                setActiveModel={setActiveModel} 
-                participants={['You']}
-                onAddParticipant={() => {}}
-                currentChat={currentChat}
-                isSidebarCollapsed={isSidebarCollapsed}
-                memories={memories}
-              />
-           )}
-           {mode === 'imagine' && <ImagineView />}
-           {mode === 'toolbox' && <ToolboxView theme={THEME} model={activeModel} />}
-           {mode === 'community' && <CommunityView theme={THEME} model={activeModel} />}
-           {mode === 'memory' && (
-               <MemoryView 
-                memories={memories} 
-                setMemories={setMemories} 
-                theme={THEME} 
-               />
-           )}
+           <AnimatePresence mode="wait">
+             {mode === 'chat' && (
+                <motion.div 
+                  key="chat"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="h-full"
+                >
+                  <ChatView 
+                    messages={messages} 
+                    setMessages={(val) => {
+                      if (typeof val === 'function') handleUpdateMessages(val as any);
+                      else handleUpdateMessages(() => val as any);
+                    }} 
+                    systemInstruction={systemInstruction} 
+                    model={activeModel} 
+                    setActiveModel={setActiveModel} 
+                    participants={['You']}
+                    onAddParticipant={() => {}}
+                    currentChat={currentChat}
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    memories={memories}
+                  />
+                </motion.div>
+             )}
+             {mode === 'toolbox' && (
+                <motion.div
+                  key="toolbox"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="h-full"
+                >
+                  <ToolboxView theme={THEME} model={activeModel} />
+                </motion.div>
+             )}
+             {mode === 'memory' && (
+                 <motion.div
+                   key="memory"
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -10 }}
+                   transition={{ duration: 0.2 }}
+                   className="h-full"
+                 >
+                   <MemoryView 
+                    memories={memories} 
+                    setMemories={setMemories} 
+                    theme={THEME} 
+                   />
+                 </motion.div>
+             )}
+           </AnimatePresence>
         </main>
       </div>
 

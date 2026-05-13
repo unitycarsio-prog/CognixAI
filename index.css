@@ -2,52 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
+  :root {
+    --bg-app: #fcfcfd;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --accent: #7c3aed;
+  }
+  
+  .dark {
+    --bg-app: #020617;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent: #a78bfa;
+  }
+
   * {
     @apply border-slate-200 dark:border-slate-800;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 dark:bg-cognix-950 dark:text-slate-100 font-sans antialiased;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    @apply font-sans antialiased transition-colors duration-300;
   }
-}
 
-.technical-grid {
-  background-image: 
-    linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
 
-.dark .technical-grid {
-  background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.01) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.01) 1px, transparent 1px);
-}
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
 
-.neural-wave {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.neural-wave div {
-  width: 3px;
-  height: 12px;
-  background-color: #3b82f6;
-  border-radius: 99px;
-  animation: wave 1s ease-in-out infinite;
-}
-
-.neural-wave div:nth-child(2) { animation-delay: 0.2s; }
-.neural-wave div:nth-child(3) { animation-delay: 0.4s; }
-.neural-wave div:nth-child(4) { animation-delay: 0.6s; }
-
-@keyframes wave {
-  0%, 100% { height: 8px; opacity: 0.4; }
-  50% { height: 20px; opacity: 1; }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 dark:bg-slate-800 rounded-full hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors;
+  }
 }
 
 .markdown-body {
@@ -55,11 +49,11 @@
 }
 
 .markdown-body p {
-  @apply mb-4 last:mb-0;
+  @apply mb-4 last:mb-0 text-slate-700 dark:text-slate-300;
 }
 
 .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-  @apply font-bold mb-2 mt-4 first:mt-0;
+  @apply font-semibold text-slate-900 dark:text-slate-100 mb-2 mt-4 first:mt-0 tracking-tight;
 }
 
 .markdown-body ul, .markdown-body ol {

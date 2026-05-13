@@ -198,7 +198,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-10">
+          <div className="max-w-4xl mx-auto space-y-10">
             {messages.map((m) => (
               <motion.div 
                 key={m.id} 
@@ -207,23 +207,30 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 transition={{ delay: 0.1 }}
                 className={`flex gap-6 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start`}
               >
-                <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-all ${m.role === 'user' ? 'bg-slate-900 dark:bg-blue-600' : 'bg-white dark:bg-cognix-900 border border-slate-100 dark:border-cognix-800 shadow-sm'}`}>
-                   {m.role === 'user' ? <User size={20} className="text-white"/> : <Bot size={24} className="text-blue-500 dark:text-blue-400"/>}
+                <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center transition-all ${m.role === 'user' ? 'bg-slate-900 dark:bg-violet-600 shadow-lg shadow-violet-500/20' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm'}`}>
+                   {m.role === 'user' ? <User size={20} className="text-white"/> : <div className="p-1.5 bg-violet-500/10 rounded-lg"><Bot size={20} className="text-violet-500 dark:text-violet-400"/></div>}
                 </div>
                 <div className={`flex flex-col gap-2 max-w-[85%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  {m.role === 'model' && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{activeModelConfig.name}</span>
+                      <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                      <span className="text-[10px] font-mono text-slate-400 opacity-60 uppercase">Unit_{m.id.slice(-4)}</span>
+                    </div>
+                  )}
                   {m.parts.map((p, i) => (
-                    <div key={i} className={`markdown-body ${m.role === 'user' ? 'bg-slate-100 dark:bg-cognix-900 text-slate-800 dark:text-slate-200 rounded-2xl px-6 py-4 font-medium' : 'text-slate-900 dark:text-slate-100 leading-relaxed pt-1'}`}>
+                    <div key={i} className={`markdown-body group relative ${m.role === 'user' ? 'bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-2xl rounded-tr-none px-6 py-4 font-medium' : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl rounded-tl-none px-8 py-6 shadow-sm leading-relaxed'}`}>
                       {p.text && <ReactMarkdown>{p.text}</ReactMarkdown>}
                       {p.inlineData && (
-                        <div className="mt-3 rounded-2xl overflow-hidden border border-slate-200 dark:border-cognix-800 shadow-lg">
-                          <img src={`data:${p.inlineData.mimeType};base64,${p.inlineData.data}`} className="max-w-full h-auto" />
+                        <div className="mt-3 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg">
+                          <img src={`data:${p.inlineData.mimeType};base64,${p.inlineData.data}`} className="max-w-full h-auto" referrerPolicy="no-referrer" />
                         </div>
                       )}
                       
                       {p.searchResults && p.searchResults.length > 0 && (
-                        <div className="mt-4 flex flex-col gap-2">
+                        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
                           <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <Globe size={12} /> Grounded references
+                            <Globe size={12} className="text-violet-500" /> Neural Grounding Verified
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {p.searchResults.map((source: any, idx: number) => (
@@ -232,9 +239,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                   href={source.uri} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="px-3 py-1.5 bg-slate-50 dark:bg-cognix-900 border border-slate-200 dark:border-cognix-800 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-2 shadow-sm"
+                                  className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all flex items-center gap-2 shadow-sm"
                                 >
-                                  <span className="truncate max-w-[150px]">{source.title || "Source"}</span>
+                                  <span className="truncate max-w-[140px] uppercase tracking-tighter">{source.title || "Reference"}</span>
                                   <ExternalLink size={10} />
                                 </a>
                             ))}
@@ -257,7 +264,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 py-4">
-                  <span className="text-[10px] font-mono text-blue-500 font-bold animate-pulse tracking-[0.3em] uppercase">Synthesizing Logic...</span>
+                  <span className="text-[10px] font-mono text-violet-500 font-bold animate-pulse tracking-[0.3em] uppercase">Synthesizing Logic...</span>
                 </div>
               </div>
             )}
@@ -265,98 +272,118 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
       </div>
 
-      <div className="absolute bottom-8 left-0 right-0 px-4 pointer-events-none">
+      <div className="absolute bottom-6 left-0 right-0 px-6 pointer-events-none">
         <div className="max-w-3xl mx-auto pointer-events-auto">
-          <div className="bg-white dark:bg-cognix-900 border border-slate-200 dark:border-cognix-800 rounded-[2.5rem] p-2 shadow-2xl focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-            
-            <div className="flex items-center gap-4 px-4 py-2 border-b border-slate-100 dark:border-cognix-800/50 mb-1">
-               <div className="relative" ref={menuRef}>
-                 <button 
-                  onClick={() => setShowModelMenu(!showModelMenu)}
-                  className="flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-cognix-950 border border-slate-200 dark:border-cognix-800 rounded-xl text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest hover:border-blue-500 transition-all"
-                 >
-                    <div className="text-blue-500">{activeModelConfig.icon}</div>
-                    <span>{activeModelConfig.name}</span>
-                    <ChevronDown size={12} className={`transition-transform ${showModelMenu ? 'rotate-180' : ''}`} />
-                 </button>
-                 
-                 <AnimatePresence>
-                   {showModelMenu && (
-                     <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full mb-4 left-0 w-[280px] bg-white dark:bg-cognix-900 border border-slate-200 dark:border-cognix-800 rounded-3xl shadow-2xl py-3 z-50 overflow-hidden"
-                     >
-                        {MODELS_CONFIG.map((m) => (
-                          <button 
-                            key={m.id}
-                            onClick={() => { setActiveModel(m.id); setShowModelMenu(false); }}
-                            className={`w-full text-left px-5 py-3 flex items-start gap-4 transition-all hover:bg-slate-50 dark:hover:bg-cognix-950 ${model === m.id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+          <div className="relative group/box">
+            <div className="absolute -inset-[2px] bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-600 rounded-[2.1rem] blur-sm opacity-0 group-focus-within/box:opacity-100 transition duration-500 animate-pulse"></div>
+            <div className="relative bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-[2rem] p-2 shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-1">
+                    <div className="relative" ref={menuRef}>
+                      <button 
+                        onClick={() => setShowModelMenu(!showModelMenu)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-700/30 rounded-full text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:scale-95"
+                      >
+                        <span className="text-violet-500">{activeModelConfig.icon}</span>
+                        <span className="hidden sm:inline">{activeModelConfig.name}</span>
+                        <ChevronDown size={10} className={`transition-transform duration-300 ${showModelMenu ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {showModelMenu && (
+                          <motion.div 
+                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                              className="absolute bottom-full mb-3 left-0 w-[260px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl py-2 z-50 overflow-hidden"
                           >
-                            <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center transition-all ${model === m.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-100 dark:bg-cognix-800 text-slate-400'}`}>
-                               {m.icon}
-                            </div>
-                            <div className="flex-1">
-                               <div className="flex items-center justify-between mb-0.5">
-                                  <span className={`text-xs font-bold ${model === m.id ? 'text-blue-600' : 'text-slate-900 dark:text-white'}`}>{m.name}</span>
-                                  <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-cognix-800 text-slate-500 rounded text-[7px] font-black tracking-widest">{m.badge}</span>
-                               </div>
-                               <p className="text-[10px] text-slate-500 leading-tight">{m.desc}</p>
-                            </div>
-                          </button>
-                        ))}
-                     </motion.div>
-                   )}
-                 </AnimatePresence>
-               </div>
+                             {MODELS_CONFIG.map((m) => (
+                               <button 
+                                 key={m.id}
+                                 onClick={() => { setActiveModel(m.id); setShowModelMenu(false); }}
+                                 className={`w-full text-left px-5 py-3 flex items-start gap-4 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 ${model === m.id ? 'bg-violet-50/50 dark:bg-violet-500/5' : ''}`}
+                               >
+                                 <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center transition-all ${model === m.id ? 'bg-violet-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                                    {m.icon}
+                                 </div>
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                       <span className={`text-[11px] font-bold tracking-tight ${model === m.id ? 'text-violet-600' : 'text-slate-900 dark:text-white'}`}>{m.name}</span>
+                                       {model === m.id && <Sparkles size={10} className="text-violet-500" />}
+                                    </div>
+                                    <p className="text-[9px] text-slate-500 leading-tight truncate">{m.desc}</p>
+                                 </div>
+                               </button>
+                             ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
-               <button 
-                onClick={() => setIsSearchEnabled(!isSearchEnabled)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${isSearchEnabled ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-               >
-                  <Search size={12} />
-                  <span>Real-time Search {isSearchEnabled ? 'ON' : 'OFF'}</span>
-               </button>
-            </div>
+                    <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1"></div>
 
-            <div className="flex items-end gap-2 px-2 pb-2">
-                <button 
-                    onClick={() => fileRef.current?.click()} 
-                    className="w-12 h-12 shrink-0 flex items-center justify-center text-slate-400 hover:text-blue-500 transition-all bg-slate-50 dark:bg-cognix-950 rounded-full border border-slate-200 dark:border-cognix-800"
-                >
-                    <Paperclip size={20} />
-                    <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) {
-                        const r = new FileReader();
-                        r.onloadend = () => setSelectedImage({ data: (r.result as string).split(',')[1], mimeType: f.type });
-                        r.readAsDataURL(f);
-                      }
-                    }} />
-                </button>
-                <div className="flex-1 relative">
-                  <textarea 
-                    ref={textareaRef}
-                    value={input} 
-                    onChange={e => {
-                      setInput(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
-                    }} 
-                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                    placeholder="Ask Cognix anything..." 
-                    className="w-full bg-transparent border-none outline-none resize-none py-3 px-2 text-base text-slate-800 dark:text-slate-100 placeholder-slate-400 font-medium max-h-[200px]" 
-                    rows={1} 
-                  />
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => setIsSearchEnabled(!isSearchEnabled)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all relative ${isSearchEnabled ? 'text-violet-600 font-bold' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                        title={`Live Web Search ${isSearchEnabled ? 'ON' : 'OFF'}`}
+                      >
+                        <Globe size={16} />
+                        {isSearchEnabled && <motion.div layoutId="search-glow" className="absolute inset-0 bg-violet-500/10 rounded-full animate-pulse" />}
+                      </button>
+                      <button 
+                          onClick={() => fileRef.current?.click()} 
+                          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all rounded-full"
+                      >
+                          <Paperclip size={16} />
+                          <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              const r = new FileReader();
+                              r.onloadend = () => setSelectedImage({ data: (r.result as string).split(',')[1], mimeType: f.type });
+                              r.readAsDataURL(f);
+                            }
+                          }} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {isSearchEnabled && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-1.5 px-2 py-0.5 bg-violet-50/50 dark:bg-violet-500/10 border border-violet-100/50 dark:border-violet-500/20 rounded-full"
+                    >
+                      <div className="w-1 h-1 rounded-full bg-violet-500 animate-pulse"></div>
+                      <span className="text-[8px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-widest">Neural Search Active</span>
+                    </motion.div>
+                  )}
                 </div>
-                <button 
-                  onClick={handleSend}
-                  disabled={isLoading || (!input.trim() && !selectedImage)}
-                  className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-full transition-all shadow-lg ${input.trim() || selectedImage ? 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105' : 'bg-slate-100 dark:bg-cognix-800 text-slate-400 cursor-not-allowed opacity-50'} active:scale-95`}
-                >
-                  <Send size={20} />
-                </button>
+
+                <div className="flex items-start gap-2.5 px-3 pb-0.5">
+                  <div className="flex-1 min-w-0">
+                    <textarea 
+                      ref={textareaRef}
+                      value={input} 
+                      onChange={e => {
+                        setInput(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 300) + 'px';
+                      }} 
+                      onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+                      placeholder="Ask Cognix anything..." 
+                      className="w-full bg-transparent border-none outline-none resize-none pt-1.5 pb-2 text-slate-800 dark:text-slate-100 placeholder-slate-400/60 font-medium max-h-[300px] text-sm leading-relaxed" 
+                      rows={1} 
+                    />
+                  </div>
+                  <button 
+                    onClick={handleSend}
+                    disabled={isLoading || (!input.trim() && !selectedImage)}
+                    className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-all shadow-md ${input.trim() || selectedImage ? 'bg-violet-600 text-white hover:bg-violet-700 hover:-translate-y-0.5 active:translate-y-0' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-50'} shadow-violet-500/10`}
+                  >
+                    <Send size={18} className={input.trim() ? 'translate-x-0.5 -translate-y-0.5' : ''} />
+                  </button>
+                </div>
             </div>
             
             <AnimatePresence>
@@ -365,25 +392,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   initial={{ opacity: 0, scale: 0.9, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="px-4 pb-4"
+                  className="mt-2"
                 >
-                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-xl group">
-                    <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-full h-full object-cover" />
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-blue-500 shadow-md group">
+                    <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     <button 
                       onClick={() => setSelectedImage(null)} 
-                      className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-sm transition-opacity"
+                      className="absolute top-1 right-1 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 backdrop-blur-sm transition-opacity"
                     >
-                      <X size={14} />
+                      <X size={12} />
                     </button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-          <div className="mt-4 text-center">
-            <p className="text-[9px] font-mono text-slate-400 uppercase tracking-[0.3em]">
-               Neural Processing Protocol Secured • Cognix OSS 2026
-            </p>
           </div>
         </div>
       </div>

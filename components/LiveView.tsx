@@ -164,40 +164,88 @@ export const LiveView: React.FC<{ theme?: ThemeColors }> = () => {
     }, [stopSession, isCameraOn, facingMode]);
 
     return (
-        <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 items-center justify-center p-6 relative">
+        <div className="flex flex-col h-full bg-white dark:bg-[#020617] items-center justify-center p-6 relative overflow-hidden">
             {isCameraOn && status === 'active' && (
                 <div className="absolute inset-0 bg-black z-0">
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-60" />
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-40 blur-sm" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
                 </div>
             )}
+
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20 dark:opacity-40">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-blue-500/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-blue-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-blue-500/5 rounded-full animate-[spin_10s_linear_infinite]"></div>
+            </div>
             
-            <div className="z-10 text-center max-w-md">
-                <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center text-white shadow-2xl mx-auto mb-10 transition-all ${status === 'active' ? 'bg-red-600 animate-pulse scale-110' : 'bg-blue-600'}`}>
-                    <MicrophoneIcon className="w-12 h-12" />
-                </div>
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tighter italic uppercase">Talk to Clora</h2>
-                <p className="text-slate-500 mb-14 font-medium px-4">Experience instant, natural voice interaction with our core neural engine.</p>
-                
-                <div className="flex gap-5 justify-center">
-                    <button onClick={() => setIsCameraOn(!isCameraOn)} className={`p-5 rounded-3xl transition-all shadow-md active:scale-95 ${isCameraOn ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-400'}`}>
-                        <CameraIcon className="w-6 h-6" />
-                    </button>
-                    {isCameraOn && (
-                        <button onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')} className="p-5 rounded-3xl bg-white dark:bg-slate-800 text-slate-400 shadow-md active:scale-95">
-                            <FlipCameraIcon className="w-6 h-6" />
-                        </button>
+            <div className="z-10 text-center max-w-xl w-full">
+                <div className="relative mb-16 inline-block">
+                    <div className={`w-32 h-32 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl transition-all duration-700 relative z-10 ${status === 'active' ? 'bg-blue-600 scale-110' : 'bg-slate-900 dark:bg-white dark:text-slate-900'}`}>
+                        {status === 'active' ? (
+                           <div className="flex gap-1 items-end h-8">
+                              <div className="w-1.5 bg-white rounded-full animate-[audio-bar_0.5s_ease-in-out_infinite_alternate]"></div>
+                              <div className="w-1.5 bg-white/60 rounded-full animate-[audio-bar_0.7s_ease-in-out_infinite_alternate_0.2s] h-10"></div>
+                              <div className="w-1.5 bg-white/40 rounded-full animate-[audio-bar_0.4s_ease-in-out_infinite_alternate_0.1s] h-6"></div>
+                              <div className="w-1.5 bg-white/80 rounded-full animate-[audio-bar_0.6s_ease-in-out_infinite_alternate_0.3s] h-12"></div>
+                           </div>
+                        ) : (
+                           <MicrophoneIcon className="w-14 h-14" />
+                        )}
+                    </div>
+                    {status === 'active' && (
+                       <>
+                          <div className="absolute inset-0 bg-blue-600 blur-3xl opacity-40 animate-pulse rounded-full"></div>
+                          <div className="absolute -inset-10 border border-blue-600/30 rounded-full animate-ping"></div>
+                       </>
                     )}
-                    <button onClick={() => status === 'active' ? stopSession() : startSession()} className={`p-8 rounded-3xl transition-all shadow-2xl active:scale-90 ${status === 'active' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}>
-                        {status === 'active' ? <StopIcon className="w-10 h-10" /> : <MicrophoneIcon className="w-10 h-10" />}
-                    </button>
+                </div>
+
+                <div className="space-y-4 mb-20">
+                   <div className="flex items-center justify-center gap-4 mb-2">
+                      <div className="px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                         <span className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.4em]">Neural Link Status: {status.toUpperCase()}</span>
+                      </div>
+                   </div>
+                   <h2 className="text-5xl lg:text-7xl font-bold text-slate-900 dark:text-white tracking-tighter italic serif">Cognix Live.</h2>
+                   <p className="text-slate-500 dark:text-slate-400 font-medium text-xl max-w-sm mx-auto leading-relaxed italic serif italic">
+                      Zero-latency voice synthesis protocol. Speak naturally.
+                   </p>
                 </div>
                 
-                <div className="mt-12">
-                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-6 py-3 bg-slate-100 dark:bg-slate-800/60 rounded-full border border-slate-200 dark:border-slate-800">
-                       Uplink Status: {status.toUpperCase()}
-                   </span>
+                <div className="flex gap-8 justify-center items-center">
+                    <button 
+                      onClick={() => setIsCameraOn(!isCameraOn)} 
+                      className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all shadow-xl active:scale-90 border-2 ${isCameraOn ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 hover:border-blue-500/50'}`}
+                    >
+                        <CameraIcon className="w-7 h-7" />
+                    </button>
+                    
+                    <button 
+                      onClick={() => status === 'active' ? stopSession() : startSession()} 
+                      className={`w-28 h-28 rounded-full transition-all shadow-[0_0_50px_rgba(59,130,246,0.3)] flex items-center justify-center active:scale-90 group relative ${status === 'active' ? 'bg-red-600' : 'bg-blue-600'}`}
+                    >
+                        {status === 'active' ? <StopIcon className="w-12 h-12 text-white" /> : <MicrophoneIcon className="w-12 h-12 text-white" />}
+                        <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                           <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">{status === 'active' ? 'Kill Session' : 'Ignite Uplink'}</span>
+                        </div>
+                    </button>
+
+                    <button 
+                      disabled={!isCameraOn}
+                      onClick={() => setFacingMode(f => f === 'user' ? 'environment' : 'user')} 
+                      className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all shadow-xl active:scale-90 border-2 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 hover:border-blue-500/50 disabled:opacity-20`}
+                    >
+                        <FlipCameraIcon className="w-7 h-7" />
+                    </button>
                 </div>
             </div>
+            
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes audio-bar {
+                from { height: 8px; }
+                to { height: 32px; }
+              }
+            `}} />
         </div>
     );
 };

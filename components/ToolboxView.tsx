@@ -229,111 +229,156 @@ export const ToolboxView: React.FC<{ theme: ThemeColors, model: ModelType }> = (
     }
 
     return (
-        <div className="h-full overflow-y-auto bg-white dark:bg-cognix-950 p-6 md:p-12 animate-fade-in no-scrollbar technical-grid">
-            <div className="max-w-5xl mx-auto space-y-12 pb-32">
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="h-full overflow-y-auto bg-white dark:bg-[#020617] p-6 md:p-12 animate-fade-in no-scrollbar relative">
+            <div className="max-w-6xl mx-auto space-y-16 pb-40">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-10">
                     <div>
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                            <Zap size={18} />
-                          </div>
-                          <h2 className="text-sm font-mono font-bold text-blue-500 uppercase tracking-[0.3em]">Processing Lab 11.2</h2>
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
+                              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.3em]">Cognix Lab 034-Neural</span>
+                           </div>
                         </div>
-                        <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">Cognix Lab</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">Specialized modules for neural processing and synthesis.</p>
+                        <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 dark:text-white tracking-tighter italic serif">Processor.</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-4 max-w-md font-medium text-lg leading-relaxed">
+                            Access low-level neural protocols for advanced data synthesis, vision scanning, and asset architecture.
+                        </p>
+                    </div>
+                    
+                    <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner min-w-[280px]">
+                       <div className="flex items-center justify-between mb-4">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Model</span>
+                          <span className="px-2 py-0.5 bg-blue-600 rounded text-[8px] font-black text-white uppercase tracking-tighter">PRO_CORE</span>
+                       </div>
+                       <div className="flex items-center gap-4 py-2 border-b border-slate-200 dark:border-slate-800 mb-4">
+                          <div className="p-3 bg-blue-500/10 rounded-2xl">
+                             <Cpu size={24} className="text-blue-500" />
+                          </div>
+                          <div>
+                             <p className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-tighter">Cognix NX-7</p>
+                             <p className="text-[9px] font-mono text-slate-400 uppercase">Status: Nominal</p>
+                          </div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-2">
+                          <div className="h-1 bg-blue-500 rounded-full"></div>
+                          <div className="h-1 bg-blue-500/30 rounded-full"></div>
+                       </div>
                     </div>
                 </header>
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
                     {tools.map(tool => (
                         <button 
                             key={tool.id} 
                             onClick={() => { setActiveTool(tool.id as any); setResult(''); setInput(''); setSelectedImage(null); }}
-                            className={`flex flex-col items-center gap-4 p-6 rounded-3xl border-2 transition-all group
+                            className={`flex flex-col items-start gap-6 p-8 rounded-[2.5rem] border transition-all relative overflow-hidden group
                                 ${activeTool === tool.id 
-                                    ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 shadow-lg shadow-blue-500/5' 
-                                    : 'bg-white dark:bg-cognix-900 border-slate-100 dark:border-cognix-800 hover:border-slate-300 dark:hover:border-slate-600'}
+                                    ? 'border-blue-600 bg-white dark:bg-slate-900 shadow-2xl shadow-blue-500/10' 
+                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-500/30 hover:translate-y-[-4px]'}
                             `}
                         >
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${activeTool === tool.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-cognix-800 text-slate-400 group-hover:text-blue-500'}`}>
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${activeTool === tool.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'bg-slate-50 dark:bg-slate-950 text-slate-400 group-hover:text-blue-500 shadow-inner'}`}>
                                 {tool.icon}
                             </div>
-                            <div className="text-center">
-                              <p className={`text-[12px] font-bold tracking-tight leading-none ${activeTool === tool.id ? 'text-blue-600' : 'text-slate-900 dark:text-white'}`}>
+                            <div>
+                              <p className={`text-lg font-bold tracking-tight mb-1 italic serif ${activeTool === tool.id ? 'text-blue-600' : 'text-slate-900 dark:text-white'}`}>
                                   {tool.label}
                               </p>
-                              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1.5 opacity-60">
+                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.2em] opacity-80">
                                   {tool.desc}
                               </p>
                             </div>
+                            
+                            {activeTool === tool.id && (
+                               <div className="absolute top-4 right-4 group">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+                               </div>
+                            )}
                         </button>
                     ))}
                 </div>
 
-                <div className="max-w-2xl mx-auto space-y-8">
-                    <div className="p-8 rounded-[3rem] border border-slate-200 dark:border-cognix-800 bg-white dark:bg-cognix-900 shadow-2xl space-y-6 transition-all focus-within:ring-4 focus-within:ring-blue-500/5">
-                        {activeTool === 'scanner' && (
-                            <div className="mb-4">
-                                <button onClick={() => fileRef.current?.click()} className="w-full py-12 border-2 border-dashed border-slate-200 dark:border-cognix-800 rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all group hover:bg-slate-50 dark:hover:bg-cognix-950 overflow-hidden relative">
-                                    {selectedImage ? (
-                                      <div className="relative group">
-                                         <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-32 h-32 rounded-2xl object-cover shadow-2xl border-4 border-white dark:border-cognix-800" alt="Inject" />
-                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-[10px] uppercase rounded-2xl">Change</div>
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <div className="w-12 h-12 bg-slate-100 dark:bg-cognix-800 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                                          <ImageIcon size={24} />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Inject Vision Node</span>
-                                      </>
-                                    )}
-                                    <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={(e) => {
-                                        const f = e.target.files?.[0];
-                                        if (f) {
-                                            const r = new FileReader();
-                                            r.onloadend = () => setSelectedImage({ data: (r.result as string).split(',')[1], mimeType: f.type });
-                                            r.readAsDataURL(f);
-                                        }
-                                    }} />
-                                </button>
+                <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div className="lg:col-span-7 space-y-8">
+                        <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-8">
+                            {activeTool === 'scanner' && (
+                                <div className="mb-4">
+                                    <button onClick={() => fileRef.current?.click()} className="w-full py-16 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 transition-all group hover:bg-blue-50/20 dark:hover:bg-blue-900/5 relative overflow-hidden">
+                                        {selectedImage ? (
+                                          <div className="relative group">
+                                             <img src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} className="w-48 h-48 rounded-3xl object-cover shadow-2xl border-2 border-white dark:border-slate-800" alt="Inject" />
+                                             <div className="absolute inset-0 bg-blue-600/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white font-bold text-xs uppercase rounded-3xl">
+                                                <RefreshCw size={24} className="mb-2" /> Replace Node
+                                             </div>
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <div className="w-16 h-16 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 shadow-inner group-hover:scale-110 transition-all duration-500">
+                                              <ImageIcon size={32} />
+                                            </div>
+                                            <div className="text-center">
+                                               <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500 block mb-1">Inject Visual Sequence</span>
+                                               <span className="text-[9px] font-mono text-slate-400 uppercase">Support: PNG, JPG, WEBP</span>
+                                            </div>
+                                          </>
+                                        )}
+                                        <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) {
+                                                const r = new FileReader();
+                                                r.onloadend = () => setSelectedImage({ data: (r.result as string).split(',')[1], mimeType: f.type });
+                                                r.readAsDataURL(f);
+                                            }
+                                        }} />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="flex flex-col gap-2">
+                               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-6">Sequence Payload</label>
+                               <textarea 
+                                   value={input} 
+                                   onChange={(e) => setInput(e.target.value)} 
+                                   placeholder={`Enter source for cluster-${activeTool}...`} 
+                                   className="w-full p-8 h-48 rounded-[2rem] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none text-slate-900 dark:text-white text-lg font-medium focus:ring-4 focus:ring-blue-500/5 transition-all resize-none shadow-inner placeholder:italic italic serif" 
+                               />
                             </div>
-                        )}
-                        <textarea 
-                            value={input} 
-                            onChange={(e) => setInput(e.target.value)} 
-                            placeholder={`Enter content for ${activeTool.toLowerCase()}...`} 
-                            className="w-full p-6 h-40 rounded-3xl bg-slate-50 dark:bg-cognix-950 border border-slate-200 dark:border-cognix-800 outline-none text-slate-900 dark:text-white text-sm font-medium focus:border-blue-500 transition-all resize-none shadow-inner" 
-                        />
-                        <button 
-                          onClick={runTool} 
-                          disabled={loading || (!input.trim() && !selectedImage)} 
-                          className="w-full py-5 rounded-3xl font-bold text-xs uppercase tracking-[0.4em] text-white bg-slate-900 dark:bg-blue-600 hover:scale-[1.01] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-500/10"
-                        >
-                            {loading ? 'Processing Neural Stream...' : `Execute ${activeTool.toUpperCase()}`}
-                        </button>
+                            <button 
+                              onClick={runTool} 
+                              disabled={loading || (!input.trim() && !selectedImage)} 
+                              className="w-full py-6 rounded-[2rem] font-bold text-xs uppercase tracking-[0.4em] text-white bg-slate-900 dark:bg-blue-600 hover:translate-y-[-2px] active:translate-y-0 disabled:opacity-30 transition-all shadow-2xl shadow-blue-500/20"
+                            >
+                                {loading ? 'Synthesizing...' : `Initialize Prototol`}
+                            </button>
+                        </div>
                     </div>
 
-                    <AnimatePresence>
-                      {result && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-10 rounded-[3rem] bg-slate-50 dark:bg-cognix-900 border border-slate-200 dark:border-cognix-800 shadow-sm relative group"
-                          >
-                              <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                   <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Neural Output</span>
-                                </div>
-                                <button onClick={handleCopy} className="p-2 text-slate-400 hover:text-blue-500 transition-all">
-                                   {copied ? <Check size={18} className="text-emerald-500" /> : <Copy size={18} />}
-                                </button>
-                              </div>
-                              <div className="text-slate-900 dark:text-slate-100 font-medium leading-relaxed text-sm whitespace-pre-wrap selection:bg-blue-500/20">{result}</div>
-                          </motion.div>
-                      )}
-                    </AnimatePresence>
+                    <div className="lg:col-span-12">
+                       <AnimatePresence>
+                         {result && (
+                             <motion.div 
+                               initial={{ opacity: 0, y: 30 }}
+                               animate={{ opacity: 1, y: 0 }}
+                               className="rounded-[3rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden"
+                             >
+                                 <div className="flex items-center justify-between px-10 py-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+                                   <div className="flex items-center gap-4">
+                                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Protocol Synthesis Finalized</span>
+                                   </div>
+                                   <div className="flex items-center gap-4">
+                                      <button onClick={handleCopy} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-500 transition-all text-[10px] font-bold uppercase tracking-widest">
+                                         {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                                         {copied ? 'Captured' : 'Capture Buffer'}
+                                      </button>
+                                   </div>
+                                 </div>
+                                 <div className="p-12 text-slate-900 dark:text-slate-100 font-medium leading-relaxed text-lg whitespace-pre-wrap selection:bg-blue-500/20 max-h-[600px] overflow-y-auto no-scrollbar italic serif">
+                                    {result}
+                                 </div>
+                             </motion.div>
+                         )}
+                       </AnimatePresence>
+                    </div>
                 </div>
             </div>
         </div>
