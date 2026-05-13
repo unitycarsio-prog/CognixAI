@@ -2,76 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
 @layer base {
   :root {
     --bg-app: #fcfcfd;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
+    --text-primary: #000000;
+    --text-secondary: #475569;
     --accent: #7c3aed;
   }
   
   .dark {
     --bg-app: #020617;
-    --text-primary: #f8fafc;
+    --text-primary: #ffffff;
     --text-secondary: #94a3b8;
     --accent: #a78bfa;
   }
 
   * {
-    @apply border-slate-200 dark:border-slate-800;
+    @apply border-slate-200 dark:border-slate-800 outline-none;
+    font-weight: 600; /* Force bolder default weight */
   }
 
   body {
     background-color: var(--bg-app);
     color: var(--text-primary);
-    @apply font-sans antialiased transition-colors duration-300;
+    font-family: 'Outfit', sans-serif;
+    @apply antialiased transition-colors duration-300;
   }
 
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 dark:bg-slate-800 rounded-full hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors;
-  }
+  ::-webkit-scrollbar { display: none; }
 }
 
 .markdown-body {
-  @apply text-base leading-relaxed;
+  @apply text-base leading-relaxed font-bold;
 }
 
 .markdown-body p {
-  @apply mb-4 last:mb-0 text-slate-700 dark:text-slate-300;
+  @apply mb-4 last:mb-0 text-slate-900 dark:text-slate-100;
 }
 
 .markdown-body h1, .markdown-body h2, .markdown-body h3 {
-  @apply font-semibold text-slate-900 dark:text-slate-100 mb-2 mt-4 first:mt-0 tracking-tight;
+  @apply font-black text-slate-900 dark:text-white mb-2 mt-4 first:mt-0 tracking-tight;
 }
 
 .markdown-body ul, .markdown-body ol {
   @apply mb-4 pl-6;
 }
 
-.markdown-body ul {
-  @apply list-disc;
-}
-
-.markdown-body ol {
-  @apply list-decimal;
-}
-
 .markdown-body code {
-  @apply bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono text-sm;
+  @apply bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono text-xs font-bold;
 }
 
 .markdown-body pre {
-  @apply bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-sm overflow-x-auto mb-4;
+  @apply bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-xs overflow-x-auto mb-4 border border-slate-800;
 }

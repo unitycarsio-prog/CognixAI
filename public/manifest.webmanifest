@@ -1,0 +1,16 @@
+{
+  "name": "Cognix AI",
+  "short_name": "Cognix",
+  "description": "Next-generation neural workspace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2103/2103893.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

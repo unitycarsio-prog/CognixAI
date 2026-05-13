@@ -63,7 +63,7 @@ const MODELS_CONFIG: ModelConfig[] = [
   },
   {
     id: 'pro',
-    name: 'PRONEXUS',
+    name: 'Cognix Pro',
     badge: 'ADVANCED',
     desc: 'Deep reasoning and complex logic',
     icon: <Cpu size={16} />,
@@ -207,20 +207,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 transition={{ delay: 0.1 }}
                 className={`flex gap-6 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-start`}
               >
-                <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center transition-all ${m.role === 'user' ? 'bg-slate-900 dark:bg-violet-600 shadow-lg shadow-violet-500/20' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm'}`}>
-                   {m.role === 'user' ? <User size={20} className="text-white"/> : <div className="p-1.5 bg-violet-500/10 rounded-lg"><Bot size={20} className="text-violet-500 dark:text-violet-400"/></div>}
+                <div className={`shrink-0 transition-all ${m.role === 'user' ? 'w-10 h-10 rounded-2xl bg-slate-900 dark:bg-violet-600 shadow-lg shadow-violet-500/20 flex items-center justify-center' : 'w-8 h-8 rounded-lg bg-violet-600/10 flex items-center justify-center'}`}>
+                   {m.role === 'user' ? <User size={20} className="text-white"/> : <Sparkles size={14} className="text-violet-500" />}
                 </div>
-                <div className={`flex flex-col gap-2 max-w-[85%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  {m.role === 'model' && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{activeModelConfig.name}</span>
-                      <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
-                      <span className="text-[10px] font-mono text-slate-400 opacity-60 uppercase">Unit_{m.id.slice(-4)}</span>
-                    </div>
-                  )}
+                <div className={`flex flex-col gap-2 max-w-[90%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
                   {m.parts.map((p, i) => (
-                    <div key={i} className={`markdown-body group relative ${m.role === 'user' ? 'bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-2xl rounded-tr-none px-6 py-4 font-medium' : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl rounded-tl-none px-8 py-6 shadow-sm leading-relaxed'}`}>
-                      {p.text && <ReactMarkdown>{p.text}</ReactMarkdown>}
+                    <div key={i} className={`markdown-body group relative ${m.role === 'user' ? 'bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-2xl rounded-tr-none px-6 py-4 font-medium' : 'bg-transparent text-black dark:text-white py-1 leading-relaxed'}`}>
+                      {p.text && (
+                        <div className={m.role === 'model' ? 'text-sm font-medium' : ''}>
+                          <ReactMarkdown>{p.text}</ReactMarkdown>
+                        </div>
+                      )}
                       {p.inlineData && (
                         <div className="mt-3 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg">
                           <img src={`data:${p.inlineData.mimeType};base64,${p.inlineData.data}`} className="max-w-full h-auto" referrerPolicy="no-referrer" />
@@ -272,21 +269,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
       </div>
 
-      <div className="absolute bottom-6 left-0 right-0 px-6 pointer-events-none">
-        <div className="max-w-3xl mx-auto pointer-events-auto">
+      <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 px-4 sm:px-6 pointer-events-none">
+        <div className="max-w-2xl mx-auto pointer-events-auto">
           <div className="relative group/box">
-            <div className="absolute -inset-[2px] bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-600 rounded-[2.1rem] blur-sm opacity-0 group-focus-within/box:opacity-100 transition duration-500 animate-pulse"></div>
-            <div className="relative bg-white/95 dark:bg-slate-950/90 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-[2rem] p-2 shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex flex-col gap-2">
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-violet-600 via-fuchsia-400 to-violet-600 rounded-[1.5rem] blur-[2px] opacity-0 group-focus-within/box:opacity-100 transition duration-500 animate-pulse"></div>
+            <div className="relative bg-white/95 dark:bg-slate-950/90 backdrop-blur-3xl border border-slate-200/40 dark:border-slate-800/40 rounded-[1.5rem] p-1.5 shadow-[0_8px_40px_rgb(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgb(0,0,0,0.4)] flex flex-col gap-1.5">
                 <div className="flex items-center justify-between px-1">
                   <div className="flex items-center gap-1">
                     <div className="relative" ref={menuRef}>
                       <button 
                         onClick={() => setShowModelMenu(!showModelMenu)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/40 dark:border-slate-700/30 rounded-full text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:scale-95"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/20 dark:border-slate-700/20 rounded-full text-[8px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-all active:scale-95"
                       >
                         <span className="text-violet-500">{activeModelConfig.icon}</span>
-                        <span className="hidden sm:inline">{activeModelConfig.name}</span>
-                        <ChevronDown size={10} className={`transition-transform duration-300 ${showModelMenu ? 'rotate-180' : ''}`} />
+                        <span className="hidden xs:inline">{activeModelConfig.name}</span>
+                        <ChevronDown size={8} className={`transition-transform duration-300 ${showModelMenu ? 'rotate-180' : ''}`} />
                       </button>
                       
                       <AnimatePresence>
@@ -360,7 +357,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-start gap-2.5 px-3 pb-0.5">
+                <div className="flex items-start gap-2 px-2.5 pb-0.5">
                   <div className="flex-1 min-w-0">
                     <textarea 
                       ref={textareaRef}
@@ -368,20 +365,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       onChange={e => {
                         setInput(e.target.value);
                         e.target.style.height = 'auto';
-                        e.target.style.height = Math.min(e.target.scrollHeight, 300) + 'px';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
                       }} 
                       onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                      placeholder="Ask Cognix anything..." 
-                      className="w-full bg-transparent border-none outline-none resize-none pt-1.5 pb-2 text-slate-800 dark:text-slate-100 placeholder-slate-400/60 font-medium max-h-[300px] text-sm leading-relaxed" 
+                      placeholder="Neural query..." 
+                      className="w-full bg-transparent border-none outline-none resize-none pt-1.5 pb-2 text-slate-900 dark:text-white placeholder-slate-400/50 font-bold max-h-[200px] text-xs leading-relaxed" 
                       rows={1} 
                     />
                   </div>
                   <button 
                     onClick={handleSend}
                     disabled={isLoading || (!input.trim() && !selectedImage)}
-                    className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-all shadow-md ${input.trim() || selectedImage ? 'bg-violet-600 text-white hover:bg-violet-700 hover:-translate-y-0.5 active:translate-y-0' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-50'} shadow-violet-500/10`}
+                    className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-xl transition-all ${input.trim() || selectedImage ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20 active:scale-90' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 cursor-not-allowed opacity-50'}`}
                   >
-                    <Send size={18} className={input.trim() ? 'translate-x-0.5 -translate-y-0.5' : ''} />
+                    <Send size={14} className={input.trim() ? 'translate-x-0.5' : ''} />
                   </button>
                 </div>
             </div>
